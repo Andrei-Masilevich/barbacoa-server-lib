@@ -11,7 +11,6 @@
 
 #include <server_clib/app.h>
 #include <ssl_helpers/utils.h>
-#include <ssl_helpers/encoding.h>
 
 #if defined(SERVER_LIB_PLATFORM_LINUX)
 #include <pthread.h>
@@ -172,13 +171,13 @@ namespace {
                 {
                     std::ifstream core(prev_core.generic_string(), std::ifstream::binary);
 
-                    char elf_header[4];
-                    SRV_ASSERT(core && core.read(elf_header, sizeof(elf_header)), "File is not readable");
+                    const char elf[] = { '\x7f', 'E', 'L', 'F' };
+                    char bin_header[sizeof(elf)];
+                    SRV_ASSERT(core && core.read(bin_header, sizeof(elf)), "File is not readable");
 
                     core.close();
 
-                    auto elf_hex = ssl_helpers::to_hex(std::string(elf_header, sizeof(elf_header)));
-                    SRV_ASSERT(elf_hex == "7f454c46", "Wrong file type");
+                    SRV_ASSERT(0 == std::memcmp(elf, bin_header, sizeof(elf)), "Wrong file type");
 
                     auto tm = ssl_helpers::to_iso_string(fs::last_write_time(prev_core));
                     auto renamed = prev_core;
