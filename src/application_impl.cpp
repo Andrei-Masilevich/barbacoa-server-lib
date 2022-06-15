@@ -20,6 +20,7 @@
 #include <unistd.h>
 #include <sys/resource.h>
 
+#include <elf.h>
 #endif
 
 #include <signal.h>
@@ -171,13 +172,13 @@ namespace {
                 {
                     std::ifstream core(prev_core.generic_string(), std::ifstream::binary);
 
-                    const char elf[] = { '\x7f', 'E', 'L', 'F' };
-                    char bin_header[sizeof(elf)];
-                    SRV_ASSERT(core && core.read(bin_header, sizeof(elf)), "File is not readable");
+                    const char elf[] = ELFMAG;
+                    char bin_header[sizeof(elf) - 1]; // Ignore bit depth (EI_CLASS)
+                    SRV_ASSERT(core && core.read(bin_header, sizeof(bin_header)), "File is not readable");
 
                     core.close();
 
-                    SRV_ASSERT(0 == std::memcmp(elf, bin_header, sizeof(elf)), "Wrong file type");
+                    SRV_ASSERT(0 == std::strncmp(elf, bin_header, sizeof(bin_header)), "Wrong file type");
 
                     auto tm = ssl_helpers::to_iso_string(fs::last_write_time(prev_core));
                     auto renamed = prev_core;
