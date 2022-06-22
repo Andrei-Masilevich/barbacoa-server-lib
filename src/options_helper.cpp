@@ -1,5 +1,6 @@
 #include <server_lib/options_helper.h>
 #include <server_lib/asserts.h>
+#include <server_lib/revision.h>
 
 #include <boost/filesystem.hpp>
 #include <boost/version.hpp>
@@ -10,6 +11,8 @@
 #include <string>
 #include <fstream>
 #include <iomanip>
+
+#include <openssl/opensslv.h>
 
 namespace server_lib {
 
@@ -157,16 +160,6 @@ std::string options::get_approximate_relative_time_string(const int64_t& event_t
     return result.str();
 }
 
-const char* options::get_application_name() const
-{
-    return "Server";
-}
-
-const char* options::get_application_version() const
-{
-    return "";
-}
-
 const char* options::get_config_file_name() const
 {
     return "config.ini";
@@ -174,27 +167,41 @@ const char* options::get_config_file_name() const
 
 void options::print_version(std::ostream& stream) const
 {
-    auto capitalized_header = get_application_capitalized_name();
-    if (capitalized_header && std::strlen(capitalized_header))
+    bool header = false;
+    const char* papplication_name = get_application_name();
+    const char* papplication_art_name = get_application_art_name();
+    if (papplication_art_name && std::strlen(papplication_art_name))
     {
-        stream << capitalized_header << "\n";
+        stream << papplication_art_name << "\n";
+        header = true;
     }
 
-    std::string internal_ver { get_application_version() };
-    static const char* version_header = " - Version: ";
-    size_t header_sz = std::strlen(version_header);
-    header_sz += std::strlen(get_application_name());
-    if (!internal_ver.empty())
-        header_sz += internal_ver.length();
-    header_sz += 1;
-
-    stream << get_application_name() << version_header;
-    if (!internal_ver.empty())
-        stream << internal_ver;
-    stream << "\n";
-    stream << std::setfill('_') << std::setw(static_cast<int>(header_sz)) << '\n'
-           << std::setfill(' ');
-    stream << "Boost: " << boost::replace_all_copy(std::string(BOOST_LIB_VERSION), "_", ".") << "\n";
+    const char* papplication_internal_ver = get_application_version();
+    if (papplication_internal_ver && std::strlen(papplication_internal_ver))
+    {
+        stream << " - ";
+        if (papplication_name && std::strlen(papplication_name))
+        {
+            stream << papplication_name;
+        }
+        else
+        {
+            stream << "Version";
+        }
+        stream << ": " << papplication_internal_ver << "\n";
+        header = true;
+    }
+    if (header)
+    {
+        stream << '\n';
+    }
+    stream << "Linked with: \n";
+    stream << " - " << PRJ_NAME << ": " << PRJ_VER << " (" << PRJ_GIT_REVISION_SHA << ")"
+           << "\n";
+    stream << " - "
+           << "Boost C++ Lib: " << boost::replace_all_copy(std::string(BOOST_LIB_VERSION), "_", ".") << "\n";
+    stream << " - "
+           << "SSL: " << OPENSSL_VERSION_TEXT << "\n";
 }
 
 void options::print_options(std::ostream& stream, const bpo::options_description& options) const

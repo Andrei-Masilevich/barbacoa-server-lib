@@ -24,14 +24,20 @@ public:
 
     using path = boost::filesystem::path;
 
-    virtual const char* get_application_name() const;
+    virtual const char* get_application_name() const
+    {
+        return "Server";
+    }
 
-    virtual const char* get_application_capitalized_name() const
+    virtual const char* get_application_art_name() const
     {
         return nullptr;
     }
 
-    virtual const char* get_application_version() const;
+    virtual const char* get_application_version() const
+    {
+        return nullptr;
+    }
 
     virtual const char* get_config_file_name() const;
 

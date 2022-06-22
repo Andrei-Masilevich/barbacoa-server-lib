@@ -3,10 +3,11 @@
 
 namespace server_lib {
 
-extern const char* const ver;
+extern const char* const PRJ_NAME;
+extern const char* const PRJ_VER;
 
-extern const char* const git_revision_sha;
-extern const uint32_t git_revision_unix_timestamp;
-extern const char* const git_revision_description;
+extern const char* const PRJ_GIT_REVISION_SHA;
+extern const uint32_t PRJ_GIT_REVISION_UNIX_TIMESTAMP;
+extern const char* const PRJ_GIT_REVISION_DESCRIPTION;
 
 } // namespace server_lib
