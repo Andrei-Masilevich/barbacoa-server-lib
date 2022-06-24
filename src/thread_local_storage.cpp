@@ -9,7 +9,7 @@ thread_local_storage::thread_local_storage(const size_t sz)
     SRV_ASSERT(sz > 0);
 }
 
-thread_local_storage::buffers_content_type* thread_local_storage::obtain()
+thread_local_storage::buffers_content_type* thread_local_storage::obtain(bool create)
 {
     const std::lock_guard<std::mutex> lock(_mutex);
 
@@ -18,6 +18,9 @@ thread_local_storage::buffers_content_type* thread_local_storage::obtain()
     auto it = _buffers.find(id);
     if (_buffers.end() == it)
     {
+        if (!create)
+            return nullptr;
+
         it = _buffers.emplace(id, nullptr).first;
         it->second.reset(new buffers_content_type[size()], [](buffers_content_type* p) { delete[] p; });
     }

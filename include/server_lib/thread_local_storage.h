@@ -27,7 +27,7 @@ public:
         return _sz.load();
     }
 
-    buffers_content_type* obtain();
+    buffers_content_type* obtain(bool create = true);
 
     void increase(const size_t to_add);
     void clear();
