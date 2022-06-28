@@ -1,54 +1,90 @@
 #include <server_lib/thread_local_storage.h>
 #include <server_lib/asserts.h>
 
+#include <memory.h>
+
 namespace server_lib {
 
-thread_local_storage::thread_local_storage(const size_t sz)
-    : _sz(sz)
+thread_local_storage::thread_local_storage(uint8_t buffers_count)
+    : _buffers(buffers_count)
+    , _buffers_count(buffers_count)
 {
-    SRV_ASSERT(sz > 0);
+    SRV_ASSERT(_buffers.size() > 0);
 }
 
-thread_local_storage::buffers_content_type* thread_local_storage::obtain(bool create)
+size_t thread_local_storage::size(uint8_t buff_idx) const
 {
-    const std::lock_guard<std::mutex> lock(_mutex);
+    SRV_ASSERT(buff_idx < _buffers_count.load(), "Unregistered buffer");
 
-    auto id = std::this_thread::get_id();
+    auto tid = std::this_thread::get_id();
 
-    auto it = _buffers.find(id);
-    if (_buffers.end() == it)
+    const std::lock_guard<std::mutex> lock(_tid_mutex);
+    auto& storage = _buffers[buff_idx];
+    auto it = storage.find(tid);
+    SRV_ASSERT(it != storage.end());
+    return it->second.size();
+}
+
+thread_local_storage::buffers_type* thread_local_storage::create(size_t sz, uint8_t buff_idx)
+{
+    SRV_ASSERT(buff_idx < _buffers_count.load(), "Unregistered buffer");
+
+    auto tid = std::this_thread::get_id();
+
+    const std::lock_guard<std::mutex> lock(_tid_mutex);
+    auto& storage = _buffers[buff_idx];
+    auto it = storage.find(tid);
+    if (storage.end() == it)
     {
-        if (!create)
-            return nullptr;
-
-        it = _buffers.emplace(id, nullptr).first;
-        it->second.reset(new buffers_content_type[size()], [](buffers_content_type* p) { delete[] p; });
+        it = storage.emplace(std::piecewise_construct, std::forward_as_tuple(tid), std::forward_as_tuple(sz)).first;
+    }
+    else
+    {
+        it->second.resize(sz);
+        memset(it->second.data(), 0, sz);
     }
 
-    return it->second.get();
+    return it->second.data();
 }
 
-void thread_local_storage::increase(const size_t to_add)
+thread_local_storage::buffers_type* thread_local_storage::get(uint8_t buff_idx)
 {
-    const std::lock_guard<std::mutex> lock(_mutex);
+    SRV_ASSERT(buff_idx < _buffers_count.load(), "Unregistered buffer");
 
-    auto new_sz = _sz.load() + to_add;
-    _sz.store(new_sz);
+    auto tid = std::this_thread::get_id();
 
-    auto id = std::this_thread::get_id();
-
-    auto it = _buffers.find(id);
-    if (_buffers.end() == it)
-        it = _buffers.emplace(id, nullptr).first;
-
-    it->second.reset(new buffers_content_type[size()], [](buffers_content_type* p) { delete[] p; });
+    const std::lock_guard<std::mutex> lock(_tid_mutex);
+    auto& storage = _buffers[buff_idx];
+    auto it = storage.find(tid);
+    SRV_ASSERT(storage.end() != it, "Not found");
+    return it->second.data();
 }
 
-void thread_local_storage::clear()
+void thread_local_storage::resize(size_t new_sz, uint8_t buff_idx)
 {
-    const std::lock_guard<std::mutex> lock(_mutex);
+    SRV_ASSERT(buff_idx < _buffers_count.load(), "Unregistered buffer");
+    SRV_ASSERT(new_sz > 0, "Invalid size");
 
-    _buffers.clear();
+    auto tid = std::this_thread::get_id();
+
+    const std::lock_guard<std::mutex> lock(_tid_mutex);
+    auto& storage = _buffers[buff_idx];
+    auto it = storage.find(tid);
+    SRV_ASSERT(storage.end() != it, "Not found");
+    it->second.resize(new_sz);
+}
+
+void thread_local_storage::remove(uint8_t buff_idx)
+{
+    SRV_ASSERT(buff_idx < _buffers_count.load(), "Unregistered buffer");
+
+    auto tid = std::this_thread::get_id();
+
+    const std::lock_guard<std::mutex> lock(_tid_mutex);
+    auto& storage = _buffers[buff_idx];
+    auto it = storage.find(tid);
+    if (storage.end() != it)
+        storage.erase(it);
 }
 
 } // namespace server_lib
