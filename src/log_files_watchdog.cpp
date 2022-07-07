@@ -1,4 +1,5 @@
 #include <server_lib/log_files_watchdog.h>
+#include <server_lib/fs_helper.h>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
@@ -162,7 +163,7 @@ namespace impl {
 
     bool match_file(const path& file_path, const log_files_watchdog_config& config, match_context& context)
     {
-        if (!bfs::is_regular_file(file_path) || !context.valid())
+        if (!is_regular_file(file_path) || !context.valid())
             return false;
 
         auto file_name = file_path.filename().string();
@@ -198,7 +199,8 @@ namespace impl {
                 auto separator_pattern_it = pattern_it;
                 switch (read_pattern(pattern_it, log_variable_pattern_))
                 {
-                case 'N': {
+                case 'N':
+                {
                     scroll_number(file_it, file_name);
                     auto pred_pattern_it = pattern_it;
                     scroll_to_separator(pattern_it, log_variable_pattern_);

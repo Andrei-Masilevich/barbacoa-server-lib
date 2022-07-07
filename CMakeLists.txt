@@ -67,6 +67,7 @@ set(SERVER_LIB_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/src/network/web/web_client.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/network/web/web_entities.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/network/ifconfig.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/fs_helper.cpp"
 )
 
 list(APPEND SERVER_LIB_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/server_lib_revision.cpp")

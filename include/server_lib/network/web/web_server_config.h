@@ -1,6 +1,7 @@
 #pragma once
 
 #include <server_lib/network/server_config.h>
+#include <server_lib/fs_helper.h>
 
 #include <boost/filesystem.hpp>
 
@@ -132,10 +133,8 @@ namespace network {
 
             websec_server_config& set_cert_file(const std::string& cert_file)
             {
-                namespace fs = boost::filesystem;
-
                 SRV_ASSERT(!cert_file.empty());
-                SRV_ASSERT(fs::is_regular_file(cert_file) && fs::exists(cert_file));
+                SRV_ASSERT(is_regular_file(cert_file));
                 _cert_file = cert_file;
                 return *this;
             }
@@ -147,10 +146,8 @@ namespace network {
 
             websec_server_config& set_private_key_file(const std::string& private_key_file)
             {
-                namespace fs = boost::filesystem;
-
                 SRV_ASSERT(!private_key_file.empty());
-                SRV_ASSERT(fs::is_regular_file(private_key_file) && fs::exists(private_key_file));
+                SRV_ASSERT(is_regular_file(private_key_file));
                 _private_key_file = private_key_file;
                 return *this;
             }
@@ -162,10 +159,8 @@ namespace network {
 
             websec_server_config& set_verify_file(const std::string& verify_file)
             {
-                namespace fs = boost::filesystem;
-
                 SRV_ASSERT(!verify_file.empty());
-                SRV_ASSERT(fs::is_regular_file(verify_file) && fs::exists(verify_file));
+                SRV_ASSERT(is_regular_file(verify_file));
                 _verify_file = verify_file;
                 return *this;
             }
