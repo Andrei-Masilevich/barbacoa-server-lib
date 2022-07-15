@@ -350,12 +350,14 @@ void logger::flush()
     if (!_logs_on.load())
         return;
 
+#if defined(USE_SERVER_LOGS)
     if (!_appenders.empty())
     {
         using namespace boost::log;
 
         core::get()->flush();
     }
+#endif
 }
 
 } // namespace server_lib

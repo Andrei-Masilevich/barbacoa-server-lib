@@ -2,6 +2,10 @@
 #include <server_lib/asserts.h>
 #include <server_clib/macro.h>
 
+#if !defined(USE_SERVER_LOGS)
+#include <boost/core/ignore_unused.hpp>
+#endif
+
 namespace server_lib {
 
 namespace {
@@ -20,9 +24,13 @@ namespace {
 
 void print_trace_s(const char* text, int out_fd)
 {
+#if defined(USE_SERVER_LOGS)
     char buff[1024];
 
     __print_trace_s(buff, sizeof(buff), text, out_fd);
+#else
+    boost::ignore_unused(text, out_fd);
+#endif
 }
 
 } // namespace server_lib
