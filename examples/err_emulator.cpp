@@ -2,6 +2,7 @@
 
 #include <server_lib/asserts.h>
 #include <server_clib/macro.h>
+#include <server_lib/platform_config.h>
 
 #include <stdio.h>
 #include <iostream>
@@ -9,10 +10,16 @@
 
 namespace server_lib {
 
+#if defined(SERVER_LIB_PLATFORM_WINDOWS)
+#pragma warning(push, 0)
+#else
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat"
 #pragma GCC diagnostic ignored "-Warray-bounds"
 #pragma GCC diagnostic ignored "-Wunused-result"
+#pragma GCC diagnostic ignored "-Wfree-nonheap-object"
+#pragma GCC diagnostic ignored "-Wdiv-by-zero"
+#endif
 
 void try_libassert(uint n)
 {
@@ -38,8 +45,6 @@ void try_unhandled_exception()
 
     throw std::logic_error("Test for unhandled_exception");
 }
-
-#pragma GCC diagnostic ignored "-Wdiv-by-zero"
 
 void try_overflow(int n)
 {
@@ -258,7 +263,8 @@ bool try_fail(const fail f)
     case fail::try_inf_recursive:
         try_inf_recursive();
         break;
-    case fail::try_fail_in_lambda: {
+    case fail::try_fail_in_lambda:
+    {
         auto lmb_try = []() {
             try_fail();
         };
@@ -283,7 +289,11 @@ bool try_fail(const fail f)
     return true;
 };
 
+#if defined(SERVER_LIB_PLATFORM_WINDOWS)
+#pragma warning(pop)
+#else
 #pragma GCC diagnostic pop
+#endif
 
 #define PRINT_FAIL_ID(fail_id) #fail_id
 
