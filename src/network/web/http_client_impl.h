@@ -1,6 +1,6 @@
 #pragma once
 
-#include <server_lib/mt_event_loop.h>
+#include <server_lib/event_pool.h>
 
 #include <server_lib/network/web/web_client_config.h>
 
@@ -365,7 +365,7 @@ namespace network {
             fail_start_callback_type on_start_error = nullptr;
 
         protected:
-            std::unique_ptr<mt_event_loop> _workers;
+            std::unique_ptr<event_pool> _workers;
 
         public:
             bool is_running() const
@@ -381,8 +381,8 @@ namespace network {
 
                     SRV_LOGC_TRACE("attempts to start");
 
-                    _workers = std::make_unique<mt_event_loop>(_config.worker_threads());
-                    _workers->change_thread_name(_config.worker_name());
+                    _workers = std::make_unique<event_pool>(_config.worker_threads());
+                    _workers->change_pool_name(_config.worker_name());
 
                     auto start_ = [this, start_callback]() {
                         try

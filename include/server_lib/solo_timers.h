@@ -15,7 +15,7 @@ public:
     solo_timer_t(const std::string& dedicated_th_name = "timer")
         : base_timer(_dedicated_el)
     {
-        _dedicated_el.change_thread_name(dedicated_th_name);
+        _dedicated_el.change_loop_name(dedicated_th_name);
     }
 
     template <typename DurationType, typename Callback>

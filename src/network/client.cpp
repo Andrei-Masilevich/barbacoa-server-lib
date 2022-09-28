@@ -133,7 +133,7 @@ namespace network {
     {
         if (_impl)
         {
-            _impl->loop().post(std::move(callback));
+            _impl->post(std::move(callback));
         }
     }
 

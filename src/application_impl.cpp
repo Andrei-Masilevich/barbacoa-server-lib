@@ -238,7 +238,7 @@ void application_impl::init()
     if (executable_name.empty())
         executable_name = "MAIN";
 
-    _main_el.change_thread_name(executable_name);
+    _main_el.change_loop_name(executable_name);
 
     if (config().is_enable_corefile())
     {

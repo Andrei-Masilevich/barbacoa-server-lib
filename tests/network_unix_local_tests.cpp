@@ -47,8 +47,8 @@ namespace tests {
         event_loop server_th;
         event_loop client_th;
 
-        server_th.change_thread_name("!S");
-        client_th.change_thread_name("!C");
+        server_th.change_loop_name("!S");
+        client_th.change_loop_name("!C");
 
         msg_protocol protocol;
 
@@ -167,8 +167,8 @@ namespace tests {
         event_loop server_th;
         event_loop client_th;
 
-        server_th.change_thread_name("!S");
-        client_th.change_thread_name("!C");
+        server_th.change_loop_name("!S");
+        client_th.change_loop_name("!C");
 
         msg_protocol protocol;
 
@@ -278,8 +278,8 @@ namespace tests {
         event_loop server_th;
         event_loop client_th;
 
-        server_th.change_thread_name("!S");
-        client_th.change_thread_name("!C");
+        server_th.change_loop_name("!S");
+        client_th.change_loop_name("!C");
 
         msg_protocol protocol;
 
@@ -385,7 +385,7 @@ namespace tests {
 
         event_loop client_th;
 
-        client_th.change_thread_name("!C");
+        client_th.change_loop_name("!C");
 
         msg_protocol protocol;
 
@@ -430,7 +430,7 @@ namespace tests {
 
         event_loop test_th;
 
-        test_th.change_thread_name("T");
+        test_th.change_loop_name("T");
 
         msg_protocol protocol;
 
@@ -488,8 +488,8 @@ namespace tests {
         event_loop server_th;
         event_loop client_th;
 
-        server_th.change_thread_name("!S");
-        client_th.change_thread_name("!C");
+        server_th.change_loop_name("!S");
+        client_th.change_loop_name("!C");
 
         msg_protocol protocol;
 
@@ -614,8 +614,8 @@ namespace tests {
         event_loop server_launcher_th;
         event_loop server_manager_th;
 
-        server_launcher_th.change_thread_name("!S-L");
-        server_manager_th.change_thread_name("!S-M");
+        server_launcher_th.change_loop_name("!S-L");
+        server_manager_th.change_loop_name("!S-M");
 
         msg_protocol protocol;
 

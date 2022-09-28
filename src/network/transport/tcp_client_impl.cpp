@@ -40,7 +40,7 @@ namespace network {
 
                 SRV_ASSERT(_config && _config->valid());
 
-                _worker.change_thread_name(_config->worker_name());
+                _worker.change_loop_name(_config->worker_name());
                 auto connect_ = [this, connect_callback, fail_callback]() {
                     try
                     {
@@ -135,9 +135,9 @@ namespace network {
             return false;
         }
 
-        event_loop& tcp_client_impl::loop()
+        void tcp_client_impl::post(common_callback_type&& callback)
         {
-            return _worker;
+            _worker.post(std::move(callback));
         }
 
         void tcp_client_impl::stop_worker()

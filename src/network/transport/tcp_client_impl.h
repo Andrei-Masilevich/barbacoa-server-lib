@@ -23,7 +23,7 @@ namespace network {
             bool connect(const connect_callback_type& connect_callback,
                          const fail_callback_type& fail_callback) override;
 
-            event_loop& loop() override;
+            void post(common_callback_type&& callback) override;
 
         private:
             void stop_worker();

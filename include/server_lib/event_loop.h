@@ -1,48 +1,28 @@
 #pragma once
 
-#include <boost/asio.hpp>
-#include <boost/optional.hpp>
-#include <functional>
+#include <server_lib/base_queuered_loop.h>
+
 #include <thread>
-#include <atomic>
 
 #include <server_lib/types.h>
 #include <server_lib/timers.h>
-#include <server_lib/asserts.h>
 
 #include "wait_asynch_request.h"
 
 namespace server_lib {
 
 DECLARE_PTR(event_loop);
-class start_observable_type;
-class stop_observable_type;
 
 /**
  * \ingroup common
  *
- * \brief This class provides minimal thread management with message queue
- * It is crucial class for multythread applications based on server_lib!
+ * \brief This class provides threaded io-service
+ * with the guarantee that none of posted handlers will execute
+ * concurrently.
  */
-class event_loop
+class event_loop : public base_queuered_loop
 {
-public:
-    using callback_type = std::function<void(void)>;
-
-private:
-    template <typename Handler>
-    callback_type register_queue(Handler&& callback)
-    {
-        SRV_ASSERT(_pservice);
-        auto callback_ = [this, callback = std::move(callback)]() mutable {
-            callback();
-            std::atomic_fetch_sub<uint64_t>(&this->_queue_size, 1);
-        };
-        std::atomic_fetch_add<uint64_t>(&_queue_size, 1);
-        return callback_;
-    }
-
-    void apply_thread_name();
+    using base_class = base_queuered_loop;
 
 public:
     using timer = server_lib::timer<event_loop>;
@@ -51,18 +31,7 @@ public:
     event_loop(bool in_separate_thread = true);
     virtual ~event_loop();
 
-    operator boost::asio::io_service&()
-    {
-        SRV_ASSERT(_pservice);
-        return *_pservice;
-    }
-
-    std::shared_ptr<boost::asio::io_service> service() const
-    {
-        return _pservice;
-    }
-
-    event_loop& change_thread_name(const std::string&);
+    event_loop& change_loop_name(const std::string&);
 
     /**
      * Start loop
@@ -97,14 +66,6 @@ public:
     event_loop& on_stop(callback_type&& callback);
 
     /**
-     * Start has just called but loop probably couldn't run yet
-     */
-    bool is_running() const
-    {
-        return _is_running;
-    }
-
-    /**
      * Loop has run
      */
     bool is_run() const
@@ -113,11 +74,6 @@ public:
     }
 
     static bool is_main_thread();
-
-    auto queue_size() const
-    {
-        return _queue_size.load();
-    }
 
     virtual bool is_this_loop() const
     {
@@ -143,7 +99,7 @@ public:
     template <typename Handler>
     event_loop& post(Handler&& callback)
     {
-        SRV_ASSERT(_pservice);
+        SRV_ASSERT(service());
         SRV_ASSERT(_pstrand);
 
         auto callback_ = register_queue(callback);
@@ -154,7 +110,7 @@ public:
         //  in which the 'run()'
         //* The 'strand' object guarantees that all 'post's are executed in queue
         //
-        _pservice->post(_pstrand->wrap(std::move(callback_)));
+        service()->post(_pstrand->wrap(std::move(callback_)));
 
         return *this;
     }
@@ -172,7 +128,7 @@ public:
     template <typename DurationType, typename Handler>
     event_loop& post(DurationType&& duration, Handler&& callback)
     {
-        SRV_ASSERT(_pservice);
+        SRV_ASSERT(service());
         SRV_ASSERT(_pstrand);
 
         auto callback_ = register_queue(callback);
@@ -181,7 +137,7 @@ public:
 
         SRV_ASSERT(ms.count() > 0, "1 millisecond is minimum timer accuracy");
 
-        auto timer = std::make_shared<boost::asio::deadline_timer>(*_pservice);
+        auto timer = std::make_shared<boost::asio::deadline_timer>(*service());
 
         timer->expires_from_now(boost::posix_time::milliseconds(ms.count()));
         timer->async_wait(_pstrand->wrap([timer /*save timer object*/, callback_](const boost::system::error_code& ec) {
@@ -303,27 +259,15 @@ public:
     void wait();
 
 protected:
-    void run();
-    void reset();
-    void notify_start();
-    void notify_stop();
+    void reset() override;
 
-protected:
+private:
     const bool _run_in_separate_thread = false;
-    std::atomic_bool _is_running;
     std::atomic_bool _is_run;
     std::atomic<std::thread::id> _id;
     std::atomic_long _native_thread_id;
-    std::shared_ptr<boost::asio::io_service> _pservice;
     std::unique_ptr<boost::asio::io_service::strand> _pstrand;
-    boost::optional<boost::asio::io_service::work> _loop_maintainer;
-    std::string _thread_name = "io_service loop";
-    std::atomic_uint64_t _queue_size;
     std::unique_ptr<std::thread> _thread;
-
-private:
-    std::unique_ptr<start_observable_type> _start_observer;
-    std::unique_ptr<stop_observable_type> _stop_observer;
 };
 
 } // namespace server_lib

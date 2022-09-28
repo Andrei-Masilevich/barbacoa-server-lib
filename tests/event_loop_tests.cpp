@@ -1,7 +1,8 @@
 #include "tests_common.h"
 
 #include <server_lib/logging_helper.h>
-#include <server_lib/mt_event_loop.h>
+#include <server_lib/event_loop.h>
+#include <server_lib/event_pool.h>
 
 
 namespace server_lib {
@@ -17,20 +18,17 @@ namespace tests {
 
         server_lib::event_loop loop;
 
-        BOOST_REQUIRE_NO_THROW(loop.change_thread_name("L").start());
+        BOOST_REQUIRE_NO_THROW(loop.change_loop_name("L").start());
         BOOST_REQUIRE_NO_THROW(loop.stop());
 
-        LOG_INFO("Next case");
-
-        // Event loop can't stop itself (stop will emit deadlock)
-        // it will be done by creator or external loop.
+        // In the next case loop is stopping by external loop
 
         bool done_test = false;
         std::mutex done_test_cond_guard;
         std::condition_variable done_test_cond;
 
         server_lib::event_loop external_stopper;
-        BOOST_REQUIRE_NO_THROW(external_stopper.change_thread_name("LS").start());
+        BOOST_REQUIRE_NO_THROW(external_stopper.change_loop_name("LS").start());
         auto stop_action = [&]() {
             LOG_INFO("Action is starting");
             external_stopper.post([&]() {
@@ -58,7 +56,7 @@ namespace tests {
 
         server_lib::event_loop loop1;
 
-        loop1.change_thread_name("!L1");
+        loop1.change_loop_name("!L1");
         loop1.start();
 
         BOOST_REQUIRE(loop1.wait_result(false, [] { return true; }));
@@ -78,7 +76,7 @@ namespace tests {
 
         server_lib::event_loop loop2;
 
-        loop2.change_thread_name("!L2");
+        loop2.change_loop_name("!L2");
         loop2.start();
 
         // Check timeout
@@ -131,7 +129,7 @@ namespace tests {
 
         server_lib::event_loop loop1;
 
-        loop1.change_thread_name("!L1");
+        loop1.change_loop_name("!L1");
         loop1.start();
 
         auto payload = [val1 = VAL1_PAYLOAD_DONE, val2 = VAL2_PAYLOAD_DONE]() -> AnyResult {
@@ -149,7 +147,7 @@ namespace tests {
 
         server_lib::event_loop loop2;
 
-        loop2.change_thread_name("!L2");
+        loop2.change_loop_name("!L2");
         loop2.start();
 
         // Check timeout
@@ -171,7 +169,7 @@ namespace tests {
 
         server_lib::event_loop loop1;
 
-        loop1.change_thread_name("!L1");
+        loop1.change_loop_name("!L1");
         loop1.start();
 
         BOOST_REQUIRE_THROW(loop1.wait_result(false, payload), std::logic_error);
@@ -183,7 +181,7 @@ namespace tests {
 
         server_lib::event_loop loop2;
 
-        loop2.change_thread_name("!L2");
+        loop2.change_loop_name("!L2");
         loop2.start();
 
         // Check timeout
@@ -198,7 +196,7 @@ namespace tests {
 
         server_lib::event_loop loop1;
 
-        loop1.change_thread_name("!L1");
+        loop1.change_loop_name("!L1");
         loop1.start();
 
         auto payload = []() -> void {
@@ -215,7 +213,7 @@ namespace tests {
 
         server_lib::event_loop loop2;
 
-        loop2.change_thread_name("!L2");
+        loop2.change_loop_name("!L2");
         loop2.start();
 
         // Check timeout
@@ -236,7 +234,7 @@ namespace tests {
 
         server_lib::event_loop loop1;
 
-        loop1.change_thread_name("!L1");
+        loop1.change_loop_name("!L1");
         loop1.start();
 
         BOOST_REQUIRE_THROW(loop1.wait(payload), std::logic_error);
@@ -248,7 +246,7 @@ namespace tests {
 
         server_lib::event_loop loop2;
 
-        loop2.change_thread_name("!L2");
+        loop2.change_loop_name("!L2");
         loop2.start();
 
         // Check timeout
@@ -257,32 +255,27 @@ namespace tests {
         loop2.stop();
     }
 
-    BOOST_AUTO_TEST_CASE(mt_event_loop_check)
+    BOOST_AUTO_TEST_CASE(event_pool_check)
     {
         print_current_test_name();
 
-        server_lib::mt_event_loop loop(5);
+        server_lib::event_pool pool(5);
 
-        BOOST_REQUIRE_NO_THROW(loop.change_thread_name("L").start());
-        BOOST_REQUIRE_NO_THROW(loop.stop());
-
-        LOG_INFO("Next case");
-
-        // Event loop can't stop itself (stop will emit deadlock)
-        // it will be done by creator or external loop
+        BOOST_REQUIRE_NO_THROW(pool.change_pool_name("L").start());
+        BOOST_REQUIRE_NO_THROW(pool.stop());
 
         bool done_test = false;
         std::mutex done_test_cond_guard;
         std::condition_variable done_test_cond;
 
         server_lib::event_loop external_stopper;
-        BOOST_REQUIRE_NO_THROW(external_stopper.change_thread_name("LS").start());
+        BOOST_REQUIRE_NO_THROW(external_stopper.change_loop_name("LS").start());
         auto stop_action = [&]() {
             LOG_INFO("Stop action is starting");
             external_stopper.post([&]() {
                 LOG_INFO("Stop action has started");
 
-                BOOST_REQUIRE_NO_THROW(loop.stop());
+                BOOST_REQUIRE_NO_THROW(pool.stop());
 
                 // Finish test
                 std::unique_lock<std::mutex> lck(done_test_cond_guard);
@@ -292,17 +285,17 @@ namespace tests {
                 LOG_INFO("Stop action has finished");
             });
         };
-        BOOST_REQUIRE_NO_THROW(loop.on_start(stop_action).start());
+        BOOST_REQUIRE_NO_THROW(pool.on_start(stop_action).start());
         // Loop external_stopper is stopping by destructor
 
         BOOST_REQUIRE(waiting_for_asynch_test(done_test, done_test_cond, done_test_cond_guard));
     }
 
-    BOOST_AUTO_TEST_CASE(mt_event_loop_post_distribution_check)
+    BOOST_AUTO_TEST_CASE(event_pool_post_distribution_check)
     {
         print_current_test_name();
 
-        server_lib::mt_event_loop loop(5);
+        server_lib::event_pool pool(5);
 
         bool done_test = false;
         std::mutex done_test_cond_guard;
@@ -312,7 +305,7 @@ namespace tests {
 
         auto stop_action = [&]() {
             external_stopper.post([&]() {
-                BOOST_REQUIRE_NO_THROW(loop.stop());
+                // Pool is stopping by destructor
 
                 // Finish test
                 std::unique_lock<std::mutex> lck(done_test_cond_guard);
@@ -323,8 +316,9 @@ namespace tests {
 
         std::atomic<size_t> waiting_posts;
 
-        auto test_action = [&] {
-            LOG_INFO("Test action");
+        auto test_action = [&](size_t action_idx) {
+            auto pid = std::this_thread::get_id();
+            LOG_INFO("Test action " << action_idx << " from " << pid);
 
             std::atomic_fetch_sub<size_t>(&waiting_posts, 1);
             if (!waiting_posts.load())
@@ -335,48 +329,43 @@ namespace tests {
 
         for (size_t ci = 0; ci < 10; ++ci) // first half
         {
-            loop.post(test_action);
+            pool.post([ci, test_action]() { test_action(ci); });
         }
 
-        BOOST_REQUIRE_NO_THROW(external_stopper.change_thread_name("LS").start());
-        BOOST_REQUIRE_NO_THROW(loop.change_thread_name("L").on_start([&]() {
-                                                               for (size_t ci = 0; ci < 10; ++ci) //second half
-                                                               {
-                                                                   loop.post(test_action);
-                                                               }
-                                                           })
+        BOOST_REQUIRE_NO_THROW(external_stopper.change_loop_name("LS").start());
+        BOOST_REQUIRE_NO_THROW(pool.change_pool_name("L").on_start([&]() {
+                                                             for (size_t ci = 0; ci < 10; ++ci) //second half
+                                                             {
+                                                                 pool.post([idx = ci + 10, test_action]() { test_action(idx); });
+                                                             }
+                                                         })
                                    .start());
         // Loop external_stopper is stopping by destructor
 
         BOOST_REQUIRE(waiting_for_asynch_test(done_test, done_test_cond, done_test_cond_guard));
     }
 
-    BOOST_AUTO_TEST_CASE(mt_event_loop_degenerate_case_check)
+    BOOST_AUTO_TEST_CASE(event_pool_single_thread_check)
     {
         print_current_test_name();
 
-        server_lib::mt_event_loop loop(1);
+        server_lib::event_pool pool(1);
 
-        BOOST_REQUIRE_NO_THROW(loop.change_thread_name("L").start());
-        BOOST_REQUIRE_NO_THROW(loop.stop());
-
-        LOG_INFO("Next case");
-
-        // Event loop can't stop itself (stop will emit deadlock)
-        // it will be done by creator or external loop
+        BOOST_REQUIRE_NO_THROW(pool.change_pool_name("L").start());
+        BOOST_REQUIRE_NO_THROW(pool.stop());
 
         bool done_test = false;
         std::mutex done_test_cond_guard;
         std::condition_variable done_test_cond;
 
         server_lib::event_loop external_stopper;
-        BOOST_REQUIRE_NO_THROW(external_stopper.change_thread_name("LS").start());
+        BOOST_REQUIRE_NO_THROW(external_stopper.change_loop_name("LS").start());
         auto stop_action = [&]() {
             LOG_INFO("Action is starting");
             external_stopper.post([&]() {
                 LOG_INFO("Action has started");
 
-                BOOST_REQUIRE_NO_THROW(loop.stop());
+                BOOST_REQUIRE_NO_THROW(pool.stop());
 
                 // Finish test
                 std::unique_lock<std::mutex> lck(done_test_cond_guard);
@@ -386,7 +375,7 @@ namespace tests {
                 LOG_INFO("Action has finished");
             });
         };
-        BOOST_REQUIRE_NO_THROW(loop.on_start(stop_action).start());
+        BOOST_REQUIRE_NO_THROW(pool.on_start(stop_action).start());
         // Loop external_stopper is stopping by destructor
 
         BOOST_REQUIRE(waiting_for_asynch_test(done_test, done_test_cond, done_test_cond_guard));

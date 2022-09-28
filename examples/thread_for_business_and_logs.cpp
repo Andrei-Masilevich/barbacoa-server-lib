@@ -1,6 +1,5 @@
 #include <server_lib/application.h>
 #include <server_lib/event_loop.h>
-#include <server_lib/mt_event_loop.h>
 
 #include <server_lib/logging_helper.h>
 
@@ -11,10 +10,10 @@ int main(void)
     using namespace std::chrono_literals;
 
     server_lib::event_loop task1;
-    server_lib::mt_event_loop task2(3);
+    server_lib::event_loop task2;
 
-    task1.change_thread_name("task1");
-    task2.change_thread_name("task2");
+    task1.change_loop_name("task1");
+    task2.change_loop_name("task2");
 
     auto&& app = server_lib::application::init();
     return app

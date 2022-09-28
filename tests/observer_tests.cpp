@@ -202,10 +202,10 @@ namespace tests {
 
         server_lib::event_loop loop1;
 
-        loop1.change_thread_name("!L1");
+        loop1.change_loop_name("!L1");
         server_lib::event_loop loop2;
 
-        loop2.change_thread_name("!L2");
+        loop2.change_loop_name("!L2");
 
         test_observer_impl observer1;
         test_observer_impl observer2;
@@ -242,7 +242,7 @@ namespace tests {
 
         server_lib::event_loop loop0;
 
-        loop0.change_thread_name("!L0");
+        loop0.change_loop_name("!L0");
 
         bool done = false;
         std::mutex done_cond_guard;

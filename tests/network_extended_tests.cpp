@@ -97,7 +97,7 @@ namespace tests {
 
         event_loop proxy_th;
 
-        proxy_th.change_thread_name("!P");
+        proxy_th.change_loop_name("!P");
 
         client proxy_client;
         server proxy_server;
@@ -270,8 +270,8 @@ namespace tests {
         event_loop processor_a;
         event_loop processor_b;
 
-        processor_a.change_thread_name(task_a_id);
-        processor_b.change_thread_name(task_b_id);
+        processor_a.change_loop_name(task_a_id);
+        processor_b.change_loop_name(task_b_id);
 
         msg_protocol app_protocol;
         pconnection server_connection;

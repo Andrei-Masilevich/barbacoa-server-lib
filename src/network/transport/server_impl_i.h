@@ -2,8 +2,6 @@
 
 #include "connection_impl_i.h"
 
-#include <server_lib/event_loop.h>
-
 #include <memory>
 
 namespace server_lib {
@@ -17,6 +15,7 @@ namespace network {
             using start_callback_type = std::function<void()>;
             using fail_callback_type = std::function<void(const std::string&)>;
             using new_connection_callback_type = std::function<void(const std::shared_ptr<__connection_impl_i>&)>;
+            using common_callback_type = std::function<void()>;
 
             virtual bool start(const start_callback_type& start_callback,
                                const new_connection_callback_type& new_connection_callback,
@@ -27,7 +26,7 @@ namespace network {
 
             virtual bool is_running() const = 0;
 
-            virtual event_loop& loop() = 0;
+            virtual void post(common_callback_type&& callback) = 0;
         };
 
     } // namespace transport_layer

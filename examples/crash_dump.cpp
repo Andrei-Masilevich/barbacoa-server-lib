@@ -144,7 +144,7 @@ int main(int argc, char* argv[])
                 fail_emit();
             else
             {
-                separated_loop.change_thread_name("separated").on_start([&]() {
+                separated_loop.change_loop_name("separated").on_start([&]() {
                                                                   fail_emit();
                                                               })
                     .start();

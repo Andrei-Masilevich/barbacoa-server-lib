@@ -15,6 +15,7 @@ namespace network {
             using app_start_callback_type = web_client::start_callback_type;
             using app_fail_callback_type = web_client::fail_callback_type;
             using app_response_callback_type = web_client::response_callback_type;
+            using common_callback_type = std::function<void()>;
 
             virtual ~web_client_impl_i() = default;
 
@@ -26,7 +27,7 @@ namespace network {
 
             virtual bool is_running() const = 0;
 
-            virtual event_loop& loop() = 0;
+            virtual void post(common_callback_type&& callback) = 0;
 
             virtual bool request(const std::string&,
                                  const std::string&,
@@ -72,10 +73,10 @@ namespace network {
                 return base_type::is_running();
             }
 
-            event_loop& loop() override
+            void post(common_callback_type&& callback) override
             {
                 SRV_ASSERT(this->_workers);
-                return *this->_workers;
+                this->_workers->post(std::move(callback));
             }
 
 
@@ -266,16 +267,11 @@ namespace network {
             if (!is_running())
                 return false;
 
-            auto& loop = _impl->loop();
             while (wait_until_stop && is_running())
             {
-                loop.wait([]() {
-                    spin_loop_pause();
-                },
-                          std::chrono::seconds(1));
-                if (is_running())
-                    spin_loop_pause();
+                spin_loop_pause();
             }
+
             return true;
         }
 

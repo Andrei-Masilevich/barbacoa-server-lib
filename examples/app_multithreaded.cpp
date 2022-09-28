@@ -124,7 +124,7 @@ int main(void)
     auto separated_loop_job = [&]() {
         // Implementation for separated loop
 
-        separated_loop.change_thread_name("loop");
+        separated_loop.change_loop_name("loop");
 
         separated_loop_timer = std::make_shared<event_loop::periodical_timer>(separated_loop);
 

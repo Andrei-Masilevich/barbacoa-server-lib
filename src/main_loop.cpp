@@ -11,7 +11,7 @@ application_main_loop::main_loop(const std::string& name)
     SRV_ASSERT(is_main_thread(), "Invalid MAIN loop creation");
 
     if (!name.empty())
-        change_thread_name(name);
+        change_loop_name(name);
 }
 
 event_loop& application_main_loop::start()

@@ -49,8 +49,8 @@ namespace network {
                 _new_connection_callback = new_connection_callback;
                 _fail_callback = fail_callback;
 
-                _workers = std::make_unique<mt_event_loop>(_config->worker_threads());
-                _workers->change_thread_name(_config->worker_name());
+                _workers = std::make_unique<event_pool>(_config->worker_threads());
+                _workers->change_pool_name(_config->worker_name());
                 auto start_ = [this, start_callback]() {
                     try
                     {
@@ -162,10 +162,10 @@ namespace network {
             return _workers && _workers->is_running();
         }
 
-        event_loop& tcp_server_impl::loop()
+        void tcp_server_impl::post(common_callback_type&& callback)
         {
-            SRV_ASSERT(this->_workers);
-            return *this->_workers;
+            SRV_ASSERT(_workers);
+            _workers->post(std::move(callback));
         }
 
     } // namespace transport_layer

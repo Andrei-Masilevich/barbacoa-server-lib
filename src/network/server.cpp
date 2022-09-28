@@ -85,16 +85,11 @@ namespace network {
         if (!is_running())
             return false;
 
-        auto& loop = _impl->loop();
         while (wait_until_stop && is_running())
         {
-            loop.wait([]() {
-                spin_loop_pause();
-            },
-                      std::chrono::seconds(1));
-            if (is_running())
-                spin_loop_pause();
+            spin_loop_pause();
         }
+
         return true;
     }
 
@@ -160,7 +155,7 @@ namespace network {
         if (is_running())
         {
             SRV_ASSERT(_impl);
-            _impl->loop().post(std::move(callback));
+            _impl->post(std::move(callback));
         }
     }
 

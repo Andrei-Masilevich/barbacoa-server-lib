@@ -2,7 +2,6 @@
 
 #include "connection_impl_i.h"
 
-#include <server_lib/event_loop.h>
 
 #include <memory>
 
@@ -28,6 +27,8 @@ namespace network {
              */
             using fail_callback_type = std::function<void(const std::string&)>;
 
+            using common_callback_type = std::function<void()>;
+
             /**
              * Start the TCP client
              *
@@ -40,7 +41,7 @@ namespace network {
                                  const fail_callback_type& fail_callback)
                 = 0;
 
-            virtual event_loop& loop() = 0;
+            virtual void post(common_callback_type&& callback) = 0;
         };
 
     } // namespace transport_layer

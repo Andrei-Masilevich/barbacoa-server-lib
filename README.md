@@ -167,10 +167,10 @@ Let's free a developer for specific business tasks.
     using namespace std::chrono_literals;
 
     server_lib::event_loop task1;
-    server_lib::mt_event_loop task2(3);
+    server_lib::event_pool task2(3);
 
-    task1.change_thread_name("task1");
-    task2.change_thread_name("task2");
+    task1.change_loop_name("task1");
+    task2.change_loop_name("task2");
 
     auto&& app = server_lib::application::init();
     return app

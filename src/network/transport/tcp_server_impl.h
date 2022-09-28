@@ -3,7 +3,7 @@
 #include "server_impl_i.h"
 
 #include <server_lib/network/server_config.h>
-#include <server_lib/mt_event_loop.h>
+#include <server_lib/event_pool.h>
 
 #include <boost/asio.hpp>
 
@@ -36,13 +36,13 @@ namespace network {
 
             bool is_running() const override;
 
-            event_loop& loop() override;
+            void post(common_callback_type&& callback) override;
 
         private:
             void accept();
             void stop_impl();
 
-            std::unique_ptr<mt_event_loop> _workers;
+            std::unique_ptr<event_pool> _workers;
 
             std::unique_ptr<boost::asio::ip::tcp::acceptor> _acceptor;
 
