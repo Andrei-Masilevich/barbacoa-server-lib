@@ -11,3 +11,12 @@
 
 #define DECLARE_PTR(class_name) DECLARE_PTR_(class, class_name)
 #define DECLARE_PTR_S(class_name) DECLARE_PTR_(struct, class_name)
+
+#include <boost/utility/string_ref.hpp>
+
+namespace server_lib {
+
+// A non-owning reference to a string
+using string_ref = boost::string_ref;
+
+} // namespace server_lib

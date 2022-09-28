@@ -1,5 +1,7 @@
 #pragma once
 
+#include <server_lib/types.h>
+
 #include <thread>
 #include <memory>
 #include <map>
@@ -22,12 +24,14 @@ class thread_local_storage
     using buffers_by_thread_type = std::map<std::thread::id, buffers_storage_type>;
 
 public:
-    thread_local_storage(uint8_t buffers_count);
+    thread_local_storage(uint8_t buffers_count = 1);
 
     size_t size(uint8_t buff_idx = 0) const;
 
     // create or reinitialize buffer dedicated to calling thread
     buffers_type* create(size_t sz, uint8_t buff_idx = 0);
+    buffers_type* create(const string_ref& src, uint8_t buff_idx = 0);
+
     // get buffer dedicated to calling thread
     buffers_type* get(uint8_t buff_idx = 0);
     // resize buffer dedicated to calling thread
@@ -35,6 +39,9 @@ public:
     // delete buffer dedicated to calling thread.
     // You should call 'create' to get this buffer again
     void remove(uint8_t buff_idx = 0);
+
+    // return valid string reference. Empty for not initialized buffer
+    string_ref get_ref(uint8_t buff_idx = 0);
 
 private:
     mutable std::mutex _tid_mutex;
