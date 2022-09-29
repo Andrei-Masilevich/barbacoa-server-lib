@@ -121,7 +121,7 @@ string_ref thread_local_storage::get_ref(uint8_t buff_idx)
     if (storage.end() == it)
         return {};
 
-    return { reinterpret_cast<char*>(it->second.data()), size(it->second.size()) };
+    return { reinterpret_cast<char*>(it->second.data()), it->second.size() };
 }
 
 } // namespace server_lib
