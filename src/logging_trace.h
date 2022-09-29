@@ -1,6 +1,6 @@
 #pragma once
 
-#ifndef NDEBUG
+#if !defined(NDEBUG) && defined(SERVER_LIB_LOGS)
 #define SRV_TRACE_SIGNAL_(T) \
     print_trace_s(T, 2)
 #define SRV_TRACE_SIGNAL_HEADER_(T) \
