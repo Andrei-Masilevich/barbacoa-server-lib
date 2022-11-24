@@ -7,6 +7,7 @@
 #include <atomic>
 #include <cstdint>
 #include <utility>
+#include <memory>
 
 #include <server_lib/singleton.h>
 
@@ -52,6 +53,8 @@ namespace server_lib {
 class logger : public singleton<logger>
 {
 public:
+    static const char* default_time_format;
+
     enum class level
     {
         fatal = 0x0, //not filtered
@@ -62,14 +65,38 @@ public:
         trace = 0x10,
     };
 
+    static const int level_trace; // 0
+    static const int level_debug; // 16
+    static const int level_info; // 24
+    static const int level_warning; // 28
+    static const int level_error; // 30
+
+    enum class details
+    {
+        all = 0x0, //not filtered
+        without_app_name = 0x1,
+        without_time = 0x2,
+        without_microseconds = 0x4,
+        without_level = 0x8,
+        without_thread_info = 0x10,
+        without_source_code = 0x20,
+    };
+
+    static const int details_all; // 0
+    static const int details_without_app_name; // 1
+    static const int details_message_with_level; // 55
+    static const int details_message_without_source_code; // 33
+    static const int details_message_only; // 63
+
     struct log_context
     {
-        unsigned long id;
+        unsigned long id; // for custom appenders
         level lv;
         std::string file;
         int line;
         std::string method;
-        using thread_info_type = std::pair<uint64_t, std::string>;
+
+        using thread_info_type = std::tuple<uint64_t, std::string, bool>;
         thread_info_type thread_info;
 
         log_context();
@@ -84,7 +111,7 @@ public:
         std::stringstream message;
     };
 
-    using log_handler_type = std::function<void(const log_message&)>;
+    using log_handler_type = std::function<void(const log_message&, int details_filter)>;
 
 protected:
     logger();
@@ -92,16 +119,50 @@ protected:
     friend class singleton<logger>;
 
 public:
-    static constexpr const char* DEFAULT_DATE_TIME_FORMAT = "%Y-%m-%d_%H:%M:%S.%f";
+    ~logger();
 
-    void init_sys_log();
-    void init_file_log(const char* file_path, const size_t rotation_size_kb, const bool flush, const char* dtf = DEFAULT_DATE_TIME_FORMAT);
-    void init_debug_log(bool async = false, bool cerr = false, const char* dtf = DEFAULT_DATE_TIME_FORMAT);
+    logger& init_cli_log(bool async = false,
+                         bool cerr = false);
+    logger& init_file_log(const char* file_path,
+                          const size_t rotation_size_kb);
+    logger& init_sys_log();
+    logger& init_debug_log(bool async, bool cerr)
+    {
+        return init_cli_log(async, cerr);
+    }
+
+    logger& set_level(int filter = logger::level_debug);
+    logger& set_level_from_environment(const char* var_name);
+
+    int level_filter() const
+    {
+        return _level_filter;
+    }
+
+    logger& set_details(int filter = logger::details_without_app_name);
+    logger& set_details_from_environment(const char* var_name);
+
+    int details_filter() const
+    {
+        return _details_filter;
+    }
+
+    logger& set_autoflush(bool = true);
+
+    bool autoflush() const
+    {
+        return _autoflush;
+    }
+
+    logger& set_time_format(const char*);
+
+    const std::string& time_format() const
+    {
+        return _time_format;
+    }
+
     void lock();
     void unlock();
-
-    //suppress trace logs by default
-    void set_level_filter(int filter = 0x10);
 
     void add_destination(log_handler_type&& handler);
 
@@ -115,14 +176,19 @@ public:
     void flush();
 
 private:
-    void add_syslog_destination();
-    void add_stdout_destination();
     template <typename SinkTypePtr>
     void add_boost_log_destination(const SinkTypePtr& sink, const std::string& dtf);
+    void add_syslog_destination();
 
 private:
+    class boost_logger_impl;
+
+    std::unique_ptr<boost_logger_impl> _boost_impl;
     std::vector<log_handler_type> _appenders;
-    int _filter = 0;
+    std::string _time_format = logger::default_time_format;
+    int _level_filter = logger::level_trace;
+    int _details_filter = logger::details_without_app_name;
+    bool _autoflush = false;
     std::atomic_bool _logs_on;
 };
 

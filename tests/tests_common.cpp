@@ -8,6 +8,7 @@
 #include <cstring>
 #include <set>
 
+#include <server_lib/logging_helper.h>
 
 namespace server_lib {
 namespace tests {
@@ -44,6 +45,11 @@ namespace tests {
         return temp;
     }
 
+    std::string current_test_name()
+    {
+        return boost::unit_test::framework::current_test_case().p_name;
+    }
+
     void print_current_test_name()
     {
         static uint32_t test_counter = 0;
@@ -53,7 +59,7 @@ namespace tests {
         ss << "TEST (";
         ss << ++test_counter;
         ss << ") - [";
-        ss << boost::unit_test::framework::current_test_case().p_name;
+        ss << current_test_name();
         ss << "]";
         DUMP_STR(ss.str());
     }
@@ -73,5 +79,22 @@ namespace tests {
         return done;
     }
 
+    using logger_type = server_lib::logger;
+
+    // Prevent fouling for Boost memory leaks detector.
+    std::unique_ptr<logger_type, void (*)(logger_type*)> _s_logger { nullptr, [](logger_type*) { logger_type::destroy(); } };
+
+    void init_global_log()
+    {
+        _s_logger.reset(logger_type::get_instance());
+        _s_logger->init_debug_log(false, true);
+    }
+
+    void restore_global_log()
+    {
+        // we should reset global objects and appenders
+        _s_logger.reset();
+        init_global_log();
+    }
 } // namespace tests
 } // namespace server_lib

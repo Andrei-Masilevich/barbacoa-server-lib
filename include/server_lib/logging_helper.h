@@ -19,18 +19,6 @@
 #endif
 #endif
 
-#define TO_STR2(X) #X
-#define TO_STR(X) TO_STR2(X)
-
-#if defined(USE_NO_LOG)
-
-#define LOG_LOG(LEVEL, FILE, LINE, FUNC, ARG) \
-    SRV_EXPAND_MACRO(                         \
-        SRV_MULTILINE_MACRO_BEGIN {           \
-        } SRV_MULTILINE_MACRO_END)
-
-#else
-
 namespace server_lib {
 
 class trim_file_path
@@ -41,19 +29,21 @@ public:
     trim_file_path(const char* FILE)
         : _file(FILE)
     {
-#if defined(PROJECT_SOURCE_DIR)
+#if defined(APPLICATION_SOURCE_DIR)
 #if defined(SERVER_LIB_PLATFORM_WINDOWS)
         std::replace(m_file.begin(), _file.end(), '\\', '/');
 #endif
-        auto start_pos = _file.find(PROJECT_SOURCE_DIR);
+        auto start_pos = _file.find(APPLICATION_SOURCE_DIR);
 
         if (start_pos != std::string::npos)
-            _file.erase(start_pos, sizeof(PROJECT_SOURCE_DIR));
+            _file.erase(start_pos, sizeof(APPLICATION_SOURCE_DIR));
 #endif
     }
 
     operator std::string() { return _file; }
 };
+
+#define LOGGER_REFERENCE server_lib::logger::instance()
 
 #define LOG_LOG(LEVEL, FILE, LINE, FUNC, ARG)                    \
     SRV_EXPAND_MACRO(                                            \
@@ -64,9 +54,8 @@ public:
             msg.context.line = LINE;                             \
             msg.context.method = FUNC;                           \
             msg.message << ARG;                                  \
-            server_lib::logger::instance().write(msg);           \
+            LOGGER_REFERENCE.write(msg);                         \
         } SRV_MULTILINE_MACRO_END)
-#endif
 
 #define LOG_TRACE(ARG) LOG_LOG(server_lib::logger::level::trace, __FILE__, __LINE__, SRV_FUNCTION_NAME_, ARG)
 #define LOG_DEBUG(ARG) LOG_LOG(server_lib::logger::level::debug, __FILE__, __LINE__, SRV_FUNCTION_NAME_, ARG)

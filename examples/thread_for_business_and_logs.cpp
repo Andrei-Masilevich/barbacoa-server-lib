@@ -5,7 +5,7 @@
 
 int main(void)
 {
-    server_lib::logger::instance().init_debug_log();
+    server_lib::logger::instance().init_cli_log();
 
     using namespace std::chrono_literals;
 

@@ -27,7 +27,7 @@ int main(void)
 {
     using namespace server_lib;
 
-    logger::instance().init_debug_log();
+    logger::instance().init_cli_log();
 
     // This instance initiates with mode to see crash dump but only in logs
     boost::filesystem::path temp = boost::filesystem::temp_directory_path() / boost::filesystem::unique_path();

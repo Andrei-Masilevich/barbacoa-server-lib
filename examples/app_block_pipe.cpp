@@ -35,7 +35,7 @@ int main(void)
     inital_timer.start(std::chrono::minutes(1 /*wait SIGPIPE*/),
                        [&logger, &loop_timer, write_iostream, write_logstream]() {
                            write_iostream();
-                           logger.init_debug_log();
+                           logger.init_cli_log();
                            loop_timer.start(std::chrono::seconds(2), write_logstream);
                            block_pipe_signal::unlock();
                        });

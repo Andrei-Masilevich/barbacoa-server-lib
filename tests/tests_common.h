@@ -34,12 +34,16 @@ namespace tests {
 
     boost::filesystem::path create_binary_data_file(const size_t file_size);
 
+    std::string current_test_name();
     void print_current_test_name();
 
     bool waiting_for_asynch_test(bool& done,
                                  std::condition_variable& done_cond,
                                  std::mutex& done_cond_guard,
                                  size_t sec_timeout = 10);
+
+    void init_global_log();
+    void restore_global_log();
 
 } // namespace tests
 } // namespace server_lib

@@ -69,53 +69,6 @@ namespace tests {
     }
 #endif
 
-    class log_fixture
-    {
-    public:
-        log_fixture()
-        {
-            server_lib::logger::instance().set_level_filter(0);
-        }
-        ~log_fixture()
-        {
-            server_lib::logger::instance().set_level_filter(0);
-        }
-    };
-
-    BOOST_FIXTURE_TEST_CASE(log_filter_check, log_fixture)
-    {
-        print_current_test_name();
-
-        int test = 0;
-
-        auto test_logs = [&]() {
-            LOG_TRACE(test);
-            LOG_DEBUG(test);
-            LOG_INFO(test);
-            LOG_WARN(test);
-            LOG_ERROR(test);
-            LOG_FATAL(test);
-            ++test;
-        };
-
-        BOOST_REQUIRE_THROW(server_lib::logger::instance().set_level_filter(0xffff), std::logic_error);
-        BOOST_REQUIRE_THROW(server_lib::logger::instance().set_level_filter(-1), std::logic_error);
-        BOOST_REQUIRE_THROW(server_lib::logger::instance().set_level_filter(-0xffff), std::logic_error);
-
-        server_lib::logger::instance().set_level_filter(0); //remove filter
-        test_logs();
-        server_lib::logger::instance().set_level_filter(); //default filter = 0x10
-        test_logs();
-        server_lib::logger::instance().set_level_filter(0x10 + 0x8);
-        test_logs();
-        server_lib::logger::instance().set_level_filter(0x10 + 0x8 + 0x4);
-        test_logs();
-        server_lib::logger::instance().set_level_filter(0x10 + 0x8 + 0x4 + 0x2);
-        test_logs();
-        server_lib::logger::instance().set_level_filter(0x10 + 0x8 + 0x4 + 0x2 + 0x1);
-        test_logs();
-    }
-
     BOOST_AUTO_TEST_SUITE_END()
 
 } // namespace tests
