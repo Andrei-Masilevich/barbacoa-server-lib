@@ -133,6 +133,24 @@ logger::log_message::log_message()
 {
 }
 
+logger::log_stream_message::~log_stream_message()
+{
+    _logger.write(_msg);
+}
+
+logger::log_stream_message::log_stream_message(logger& logger,
+                                               log_message&& msg)
+    : _logger(logger)
+    , _msg(std::move(msg))
+{
+}
+
+logger::log_stream_message::log_stream_message(log_stream_message&& other)
+    : _logger(other._logger)
+    , _msg(std::move(other._msg))
+{
+}
+
 logger::log_message::trim_file_path::trim_file_path(size_t file_sz,
                                                     const char* file,
                                                     size_t root_dir_sz,
@@ -358,6 +376,10 @@ logger& logger::set_details_from_environment(const char* var_name)
         auto input_filter = strtol(var_val, &end, 10);
         if (!*end)
             set_details(input_filter);
+        else
+        {
+            SRV_ERROR("Invalid enviroment variable value for details");
+        }
     }
 
     return *this;
@@ -424,6 +446,17 @@ logger::log_message logger::create_message(const logger::level level,
         msg.func = func;
     }
     return msg;
+}
+
+logger::log_stream_message logger::create_stream_message(const logger::level level,
+                                                         size_t file_sz,
+                                                         const char* file,
+                                                         const int line,
+                                                         const char* func)
+{
+    auto msg = create_message(level, file_sz, file, line, func);
+    logger::log_stream_message stream_msg(*this, std::move(msg));
+    return stream_msg;
 }
 
 void logger::write(const log_message& msg)

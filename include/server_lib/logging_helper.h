@@ -80,4 +80,12 @@ namespace server_lib {
 #define SRV_LOGC_FATAL(ARG)
 #endif
 
+// Alternative syntaxic
+//
+#define LOG_LOG_ALTERNATIVE(LEVEL, FILE, LINE, FUNC) \
+    LOGGER_REFERENCE.create_stream_message(LEVEL, sizeof(FILE), FILE, LINE, FUNC).stream()
+
+#define LOG(LEVEL) LOG_LOG_ALTERNATIVE(LEVEL, __FILE__, __LINE__, SRV_FUNCTION_NAME_)
+#define LOGC(LEVEL) LOG(LEVEL) << SRV_LOG_CONTEXT_
+
 } // namespace server_lib

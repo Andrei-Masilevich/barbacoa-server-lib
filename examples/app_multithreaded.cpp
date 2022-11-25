@@ -27,7 +27,7 @@ int main(void)
 {
     using namespace server_lib;
 
-    logger::instance().init_cli_log();
+    logger::instance().set_autoflush(true).init_cli_log();
 
     // This instance initiates with mode to see crash dump but only in logs
     boost::filesystem::path temp = boost::filesystem::temp_directory_path() / boost::filesystem::unique_path();
@@ -49,17 +49,17 @@ int main(void)
     std::uniform_int_distribution<int> dist(0, 3);
 
     auto payload_in_main_loop = [&]() {
-        LOGC_INFO("Make payload in main loop (job #0)");
+        LOGC(INFO) << "Make payload in main loop (job #0)";
 
         if (emit_fail[0].load())
         {
-            LOGC_INFO("Emulate memory fail in main loop (job #0)");
+            LOGC(INFO) << "Emulate memory fail in main loop (job #0)";
 
             try_fail(fail::try_uninitialized_pointer);
         }
     };
     auto payload_in_separated_loop = [&]() {
-        LOGC_INFO("Make payload in separated loop (job #1)");
+        LOGC(INFO) << "Make payload in separated loop (job #1)";
 #if defined(APP_WAIT_CASE)
         app.wait();
 #endif
@@ -68,13 +68,13 @@ int main(void)
         // in separate thread
         if (emit_fail[1].load())
         {
-            LOGC_INFO("Emulate memory fail in separated loop (job #1)");
+            LOGC(INFO) << "Emulate memory fail in separated loop (job #1)";
 
             try_fail(fail::try_uninitialized_pointer);
         }
     };
     auto payload_in_separted_thread_joinable = [&]() {
-        LOGC_INFO("Make payload in separted thread (joinable) (job #2)");
+        LOGC(INFO) << "Make payload in separted thread (joinable) (job #2)";
 #if defined(APP_WAIT_CASE)
         app.wait();
 #endif
@@ -83,13 +83,13 @@ int main(void)
         // in separate thread
         if (emit_fail[2].load())
         {
-            LOGC_INFO("Emulate memory fail in separted thread (joinable) (job #2)");
+            LOGC(INFO) << "Emulate memory fail in separted thread (joinable) (job #2)";
 
             try_fail(fail::try_uninitialized_pointer);
         }
     };
     auto payload_in_separted_thread_detached = [&]() {
-        LOGC_INFO("Make payload in separted thread (detached) (job #3)");
+        LOGC(INFO) << "Make payload in separted thread (detached) (job #3)";
 #if defined(APP_WAIT_CASE)
         app.wait();
 #endif
@@ -98,7 +98,7 @@ int main(void)
         // in separate thread
         if (emit_fail[3].load())
         {
-            LOGC_INFO("Emulate memory fail in separted thread (detached) (job #3)");
+            LOGC(INFO) << "Emulate memory fail in separted thread (detached) (job #3)";
 
             try_fail(fail::try_uninitialized_pointer);
         }
@@ -219,16 +219,16 @@ int main(void)
 #endif
 
     auto exit_callback = [&](const int signo) {
-        LOGC_INFO("Application stopped by reason " << signo);
+        LOGC(INFO) << "Application stopped by reason " << signo;
 
         stop_all_thread_jobs = true;
 
         // Was started manually. Therefore it should stopped manually.
         separated_loop.stop();
-        LOGC_TRACE("Separated loop has stopped");
+        LOGC(TRACE) << "Separated loop has stopped";
 
         separted_thread_joinable.join();
-        LOGC_TRACE("Joinable separted thread has stopped");
+        LOGC(TRACE) << "Joinable separted thread has stopped";
 
 #if defined(SERVER_LIB_PLATFORM_WINDOWS)
         if (wait_close)
@@ -242,10 +242,10 @@ int main(void)
     };
 
     auto fail_callback = [&](const int signo, const char* dump_file_path) {
-        LOGC_INFO("Application failed by signal " << signo);
+        LOGC(INFO) << "Application failed by signal " << signo;
 
-        LOGC_TRACE("Crash dump '" << dump_file_path << "':\n"
-                                  << emergency::load_stdump(dump_file_path));
+        LOGC(TRACE) << "Crash dump '" << dump_file_path << "':\n"
+                    << emergency::load_stdump(dump_file_path);
 
         boost::filesystem::remove(dump_file_path);
     };
@@ -255,7 +255,7 @@ int main(void)
     auto control_callback = [&](const control_signal sig) {
         if (control_signal::USR1 == sig)
         {
-            LOGC_INFO("Emulate normal exit");
+            LOGC(INFO) << "Emulate normal exit";
 
             app.stop();
         }
@@ -263,7 +263,7 @@ int main(void)
         {
             auto ci = dist(rd);
 
-            LOGC_INFO("Schedule memory fail in job #" << ci);
+            LOGC(INFO) << "Schedule memory fail in job #" << ci;
 
             emit_fail[ci] = true;
         }
@@ -285,7 +285,7 @@ int main(void)
     };
     auto result = app.on_start(all_jobs).on_exit(exit_callback).on_fail(fail_callback).on_control(control_callback).run();
 
-    LOGC_INFO("Application is about to finish");
+    LOGC(INFO) << "Application is about to finish";
 
     return result;
 }

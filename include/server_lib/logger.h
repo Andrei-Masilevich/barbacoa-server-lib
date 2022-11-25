@@ -134,6 +134,26 @@ public:
         static std::atomic_ulong s_id_counter;
     };
 
+    class log_stream_message
+    {
+        friend class logger;
+
+    public:
+        std::stringstream& stream()
+        {
+            return _msg.stream;
+        }
+
+        ~log_stream_message();
+
+    private:
+        log_stream_message(logger&, log_message&&);
+        log_stream_message(log_stream_message&&);
+
+        logger& _logger;
+        log_message _msg;
+    };
+
     using log_handler_type = std::function<void(const log_message&, int details_filter)>;
 
 protected:
@@ -194,6 +214,9 @@ public:
     log_message create_message(const logger::level,
                                size_t file_sz, const char* file, const int line, const char* func);
 
+    log_stream_message create_stream_message(const logger::level,
+                                             size_t file_sz, const char* file, const int line, const char* func);
+
     void write(const log_message& msg);
 
     size_t get_appender_count() const
@@ -219,5 +242,17 @@ private:
     bool _autoflush = false;
     std::atomic_bool _logs_on;
 };
+
+// Helpers for alternative syntaxic
+//
+static constexpr logger::level const& TRACE = logger::level::trace;
+static constexpr logger::level const& DEBUG = logger::level::debug;
+static constexpr logger::level const& INFO = logger::level::info;
+static constexpr logger::level const& WARNING = logger::level::warning;
+static constexpr logger::level const& ERROR = logger::level::error;
+static constexpr logger::level const& FATAL = logger::level::fatal;
+
+static constexpr logger::level const& WARN = WARNING;
+static constexpr logger::level const& ERR = ERROR;
 
 } // namespace server_lib

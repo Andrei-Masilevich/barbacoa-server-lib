@@ -22,8 +22,8 @@ int main(void)
     };
 
     auto write_logstream = []() {
-        LOG_INFO("Make payload in main loop (SIGPIPE will make exit)");
-        LOG_ERROR("Make payload in main loop (SIGPIPE will make exit)");
+        LOG(INFO) << "Make payload in main loop (SIGPIPE will make exit)";
+        LOG(ERROR) << "Make payload in main loop (SIGPIPE will make exit)";
     };
 
     block_pipe_signal lock;
