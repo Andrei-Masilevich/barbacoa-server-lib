@@ -5,7 +5,6 @@
 #include <sstream>
 #include <vector>
 #include <atomic>
-#include <cstdint>
 #include <utility>
 #include <memory>
 
@@ -88,27 +87,51 @@ public:
     static const int details_message_without_source_code; // 33
     static const int details_message_only; // 63
 
-    struct log_context
+    struct log_message
     {
+        friend class logger;
+
         unsigned long id; // for custom appenders
         level lv;
         std::string file;
         int line;
-        std::string method;
+        std::string func;
 
         using thread_info_type = std::tuple<uint64_t, std::string, bool>;
         thread_info_type thread_info;
 
-        log_context();
+        std::stringstream stream;
+
+        class trim_file_path
+        {
+            std::string _file;
+
+        public:
+            // accept string sizes calculated in compilation time
+            trim_file_path(size_t file_sz,
+                           const char* file,
+                           size_t root_dir_sz =
+#if defined(LOGGER_SOURCE_DIR)
+                               sizeof(LOGGER_SOURCE_DIR)
+#else
+                               0
+#endif
+                               ,
+                           const char* root_dir =
+#if defined(LOGGER_SOURCE_DIR)
+                               LOGGER_SOURCE_DIR
+#else
+                               nullptr
+#endif
+            );
+
+            operator std::string() { return _file; }
+        };
 
     private:
-        static std::atomic_ulong s_id_counter;
-    };
+        log_message();
 
-    struct log_message
-    {
-        log_context context;
-        std::stringstream message;
+        static std::atomic_ulong s_id_counter;
     };
 
     using log_handler_type = std::function<void(const log_message&, int details_filter)>;
@@ -166,7 +189,12 @@ public:
 
     void add_destination(log_handler_type&& handler);
 
-    void write(log_message& msg);
+    bool is_not_filtered(const logger::level) const;
+
+    log_message create_message(const logger::level,
+                               size_t file_sz, const char* file, const int line, const char* func);
+
+    void write(const log_message& msg);
 
     size_t get_appender_count() const
     {

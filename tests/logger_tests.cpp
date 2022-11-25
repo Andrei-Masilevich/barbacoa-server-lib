@@ -240,7 +240,7 @@ namespace tests {
             }
 
             BOOST_REQUIRE(line.find(now_date) != std::string::npos);
-            BOOST_REQUIRE(line.find(__FILE__) != std::string::npos);
+            BOOST_REQUIRE(line.find(logger::log_message::trim_file_path(sizeof(__FILE__), __FILE__)) != std::string::npos);
         }
 
         BOOST_REQUIRE_EQUAL(rows, 6);

@@ -1,13 +1,5 @@
 #pragma once
 
-#include <iosfwd>
-#include <set>
-#include <map>
-#include <vector>
-#include <array>
-#include <string>
-#include <sstream>
-
 #include <server_lib/logger.h>
 #include <server_lib/platform_config.h>
 
@@ -21,40 +13,17 @@
 
 namespace server_lib {
 
-class trim_file_path
-{
-    std::string _file;
-
-public:
-    trim_file_path(const char* FILE)
-        : _file(FILE)
-    {
-#if defined(APPLICATION_SOURCE_DIR)
-#if defined(SERVER_LIB_PLATFORM_WINDOWS)
-        std::replace(m_file.begin(), _file.end(), '\\', '/');
-#endif
-        auto start_pos = _file.find(APPLICATION_SOURCE_DIR);
-
-        if (start_pos != std::string::npos)
-            _file.erase(start_pos, sizeof(APPLICATION_SOURCE_DIR));
-#endif
-    }
-
-    operator std::string() { return _file; }
-};
-
 #define LOGGER_REFERENCE server_lib::logger::instance()
 
-#define LOG_LOG(LEVEL, FILE, LINE, FUNC, ARG)                    \
-    SRV_EXPAND_MACRO(                                            \
-        SRV_MULTILINE_MACRO_BEGIN {                              \
-            server_lib::logger::log_message msg;                 \
-            msg.context.lv = LEVEL;                              \
-            msg.context.file = server_lib::trim_file_path(FILE); \
-            msg.context.line = LINE;                             \
-            msg.context.method = FUNC;                           \
-            msg.message << ARG;                                  \
-            LOGGER_REFERENCE.write(msg);                         \
+#define LOG_LOG(LEVEL, FILE, LINE, FUNC, ARG)                                                      \
+    SRV_EXPAND_MACRO(                                                                              \
+        SRV_MULTILINE_MACRO_BEGIN {                                                                \
+            if (LOGGER_REFERENCE.is_not_filtered(LEVEL))                                           \
+            {                                                                                      \
+                auto msg = LOGGER_REFERENCE.create_message(LEVEL, sizeof(FILE), FILE, LINE, FUNC); \
+                msg.stream << ARG;                                                                 \
+                LOGGER_REFERENCE.write(msg);                                                       \
+            }                                                                                      \
         } SRV_MULTILINE_MACRO_END)
 
 #define LOG_TRACE(ARG) LOG_LOG(server_lib::logger::level::trace, __FILE__, __LINE__, SRV_FUNCTION_NAME_, ARG)
@@ -70,128 +39,6 @@ public:
 #define LOGC_WARN(ARG) LOG_WARN(SRV_LOG_CONTEXT_ << ARG)
 #define LOGC_ERROR(ARG) LOG_ERROR(SRV_LOG_CONTEXT_ << ARG)
 #define LOGC_FATAL(ARG) LOG_FATAL(SRV_LOG_CONTEXT_ << ARG)
-
-template <typename K, typename V>
-std::string to_string(const std::map<K, V>& value)
-{
-    std::stringstream stream;
-
-    bool is_first = true;
-    stream << "{";
-    for (const auto& _item : value)
-    {
-        if (is_first)
-        {
-            is_first = false;
-        }
-        else
-        {
-            stream << ", ";
-        }
-        stream << _item.first << ": " << _item.second;
-    }
-    stream << "}";
-
-    return stream.str();
-}
-
-
-template <typename T>
-std::string to_string(const std::set<T>& value)
-{
-    std::stringstream stream;
-
-    stream << "(";
-    for (const auto& _item : value)
-    {
-        stream << " " << _item;
-    }
-    stream << " )";
-
-    return stream.str();
-}
-
-
-template <typename T>
-const std::string to_json(const std::set<T>& value)
-{
-    std::stringstream stream;
-
-    bool is_first = true;
-    stream << "[";
-    for (const auto& item : value)
-    {
-        if (is_first)
-        {
-            is_first = false;
-        }
-        else
-        {
-            stream << ",";
-        }
-        stream << "\"" << item << "\"";
-    }
-    stream << " ]";
-
-    return stream.str();
-}
-
-
-template <typename T>
-std::string to_string(const std::vector<T>& value)
-{
-    std::stringstream stream;
-
-    stream << "[";
-    for (const auto& _item : value)
-    {
-        stream << " " << _item;
-    }
-    stream << " ]";
-
-    return stream.str();
-}
-
-
-template <typename T, size_t S>
-std::string to_string(const std::array<T, S>& value)
-{
-    std::stringstream stream;
-
-    stream << "[";
-    for (const auto& _item : value)
-    {
-        stream << " " << _item;
-    }
-    stream << " ]";
-
-    return stream.str();
-}
-
-
-template <typename T, size_t S>
-std::string to_json(const std::array<T, S>& value)
-{
-    std::stringstream stream;
-
-    bool is_first = true;
-    stream << "[";
-    for (const auto& item : value)
-    {
-        if (is_first)
-        {
-            is_first = false;
-        }
-        else
-        {
-            stream << ",";
-        }
-        stream << "\"" << item << "\"";
-    }
-    stream << " ]";
-
-    return stream.str();
-}
 
 #if defined(SERVER_LIB_SUPPRESS_LOGS)
 #if defined(SERVER_LIB_LOGS)

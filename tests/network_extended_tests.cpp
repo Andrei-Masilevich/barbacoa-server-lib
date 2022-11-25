@@ -13,6 +13,7 @@
 #include <condition_variable>
 #include <chrono>
 #include <queue>
+#include <set>
 
 namespace server_lib {
 namespace tests {
