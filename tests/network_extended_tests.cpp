@@ -51,9 +51,9 @@ namespace tests {
         pconnection server_connection;
 
         auto server_recieve_callback = [&](pconnection pconn, unit unit) {
-            LOG_TRACE("********* server_on_receive");
+            LOG(TRACE) << "********* server_on_receive";
 
-            LOG_TRACE("***** recieve unit: " << print_unit(unit));
+            LOG(TRACE) << "***** recieve unit: " << print_unit(unit);
 
             BOOST_REQUIRE_EQUAL(unit.as_string(), ping_cmd);
 
@@ -61,7 +61,7 @@ namespace tests {
         };
 
         app_server.on_start([&]() {
-                      LOG_TRACE("********* server started at port = " << port);
+                      LOG(TRACE) << "********* server started at port = " << port;
 
                       proxy_port = get_free_port();
                       if (proxy_port == port)
@@ -75,13 +75,13 @@ namespace tests {
             .on_new_connection([&](pconnection pconn) {
                 BOOST_REQUIRE(pconn);
 
-                LOG_TRACE("********* server_new_connection_callback: " << pconn->id());
+                LOG(TRACE) << "********* server_new_connection_callback: " << pconn->id();
 
                 server_connection = pconn;
 
                 server_connection->on_receive(server_recieve_callback)
                     .on_disconnect([&]() {
-                        LOG_TRACE("********* server_connection_on_disconnect");
+                        LOG(TRACE) << "********* server_connection_on_disconnect";
                     });
             })
             .start(app_server.configurate_tcp()
@@ -114,11 +114,11 @@ namespace tests {
             std::lock_guard<std::mutex> lck(proxy_in_buffer_guard);
             while (!proxy_in_buffer.empty())
             {
-                LOG_TRACE("*** proxy release_buffer = " << proxy_in_buffer.size());
+                LOG(TRACE) << "*** proxy release_buffer = " << proxy_in_buffer.size();
 
                 auto unit_to_send_next = proxy_in_buffer.front();
 
-                LOG_TRACE("***** proxy unit: " << print_unit(unit_to_send_next));
+                LOG(TRACE) << "***** proxy unit: " << print_unit(unit_to_send_next);
 
                 proxy_out_connection->send(unit_to_send_next);
                 proxy_in_buffer.pop();
@@ -126,10 +126,10 @@ namespace tests {
         };
 
         proxy_th.on_start([&]() {
-                    LOG_TRACE("********* proxy_start");
+                    LOG(TRACE) << "********* proxy_start";
 
                     proxy_server.on_start([&]() {
-                                    LOG_TRACE("********* proxy started at port = " << proxy_port);
+                                    LOG(TRACE) << "********* proxy started at port = " << proxy_port;
 
                                     // Move to the next test step
                                     std::unique_lock<std::mutex> lck(done_test_cond_guard);
@@ -139,26 +139,26 @@ namespace tests {
                         .on_new_connection([&](pconnection pconn) {
                             BOOST_REQUIRE(pconn);
 
-                            LOG_TRACE("********* proxy_server_new_connection_callback: " << pconn->id());
+                            LOG(TRACE) << "********* proxy_server_new_connection_callback: " << pconn->id();
 
                             proxy_in_connection = pconn;
 
                             proxy_in_connection->on_receive([&](pconnection, unit unit) {
                                                    proxy_th.post([&, unit]() {
-                                                       LOG_TRACE("********* proxy_server_on_receive");
+                                                       LOG(TRACE) << "********* proxy_server_on_receive";
                                                        if (proxy_out_connection)
                                                        {
                                                            release_buffer();
 
-                                                           LOG_TRACE("*** proxy send out");
+                                                           LOG(TRACE) << "*** proxy send out";
 
-                                                           LOG_TRACE("***** proxy unit: " << print_unit(unit));
+                                                           LOG(TRACE) << "***** proxy unit: " << print_unit(unit);
 
                                                            proxy_out_connection->send(unit);
                                                        }
                                                        else
                                                        {
-                                                           LOG_TRACE("*** proxy push_buffer");
+                                                           LOG(TRACE) << "*** proxy push_buffer";
 
                                                            std::lock_guard<std::mutex> lck(proxy_in_buffer_guard);
                                                            proxy_in_buffer.push(unit);
@@ -166,11 +166,11 @@ namespace tests {
                                                    });
                                                })
                                 .on_disconnect([&]() {
-                                    LOG_TRACE("********* proxy_server_on_disconnect");
+                                    LOG(TRACE) << "********* proxy_server_on_disconnect";
                                 });
 
                             BOOST_REQUIRE(proxy_client.on_connect([&](pconnection pconn) {
-                                                          LOG_TRACE("********* proxy_client_on_connect");
+                                                          LOG(TRACE) << "********* proxy_client_on_connect";
 
                                                           BOOST_REQUIRE(pconn);
 
@@ -178,23 +178,23 @@ namespace tests {
 
                                                           proxy_out_connection->on_receive([&](pconnection pconn, unit unit_) {
                                                                                   proxy_th.post([&, unit = unit_]() {
-                                                                                      LOG_TRACE("********* proxy_client_on_receive");
+                                                                                      LOG(TRACE) << "********* proxy_client_on_receive";
 
                                                                                       BOOST_REQUIRE(proxy_in_connection);
 
-                                                                                      LOG_TRACE("*** proxy send in");
+                                                                                      LOG(TRACE) << "*** proxy send in";
 
-                                                                                      LOG_TRACE("***** proxy unit: " << print_unit(unit));
+                                                                                      LOG(TRACE) << "***** proxy unit: " << print_unit(unit);
 
                                                                                       proxy_in_connection->send(unit);
                                                                                   });
                                                                               })
                                                               .on_disconnect([&]() {
-                                                                  LOG_TRACE("********* proxy_client_on_disconnect");
+                                                                  LOG(TRACE) << "********* proxy_client_on_disconnect";
                                                               });
 
                                                           proxy_th.post([&]() {
-                                                              LOG_TRACE("********* proxy release_buffer");
+                                                              LOG(TRACE) << "********* proxy release_buffer";
 
                                                               release_buffer();
                                                           });
@@ -222,12 +222,12 @@ namespace tests {
         client client;
 
         BOOST_REQUIRE(client.on_connect([&](pconnection pconn) {
-                                LOG_TRACE("********* client_on_connect");
+                                LOG(TRACE) << "********* client_on_connect";
 
                                 pconn->on_receive([&](pconnection pconn, unit unit) {
-                                    LOG_TRACE("********* client_on_receive");
+                                    LOG(TRACE) << "********* client_on_receive";
 
-                                    LOG_TRACE("***** recieve unit: " << print_unit(unit));
+                                    LOG(TRACE) << "***** recieve unit: " << print_unit(unit);
 
                                     BOOST_REQUIRE_EQUAL(unit.as_string(), pong_cmd);
 

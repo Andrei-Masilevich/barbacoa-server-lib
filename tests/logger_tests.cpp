@@ -103,11 +103,13 @@ namespace tests {
         {
             switch (rows)
             {
-            case 0: {
+            case 0:
+            {
                 BOOST_REQUIRE(line.find("[trace]") != std::string::npos);
                 break;
             }
-            case 1: {
+            case 1:
+            {
                 BOOST_REQUIRE(line.find("[debug]") != std::string::npos);
                 break;
             }
@@ -141,19 +143,23 @@ namespace tests {
         {
             switch (rows)
             {
-            case 0: {
+            case 0:
+            {
                 BOOST_REQUIRE(line.find("[info]") != std::string::npos);
                 break;
             }
-            case 1: {
+            case 1:
+            {
                 BOOST_REQUIRE(line.find("[warning]") != std::string::npos);
                 break;
             }
-            case 2: {
+            case 2:
+            {
                 BOOST_REQUIRE(line.find("[error]") != std::string::npos);
                 break;
             }
-            case 3: {
+            case 3:
+            {
                 BOOST_REQUIRE(line.find("[fatal]") != std::string::npos);
                 break;
             }
@@ -204,27 +210,33 @@ namespace tests {
 
             switch (rows)
             {
-            case 0: {
+            case 0:
+            {
                 BOOST_REQUIRE(line.find("[trace]") != std::string::npos);
                 break;
             }
-            case 1: {
+            case 1:
+            {
                 BOOST_REQUIRE(line.find("[debug]") != std::string::npos);
                 break;
             }
-            case 2: {
+            case 2:
+            {
                 BOOST_REQUIRE(line.find("[info]") != std::string::npos);
                 break;
             }
-            case 3: {
+            case 3:
+            {
                 BOOST_REQUIRE(line.find("[warning]") != std::string::npos);
                 break;
             }
-            case 4: {
+            case 4:
+            {
                 BOOST_REQUIRE(line.find("[error]") != std::string::npos);
                 break;
             }
-            case 5: {
+            case 5:
+            {
                 BOOST_REQUIRE(line.find("[fatal]") != std::string::npos);
                 break;
             }
@@ -262,23 +274,28 @@ namespace tests {
         {
             switch (rows)
             {
-            case 0: {
+            case 0:
+            {
                 BOOST_REQUIRE(line.find("[debug]") != std::string::npos);
                 break;
             }
-            case 1: {
+            case 1:
+            {
                 BOOST_REQUIRE(line.find("[info]") != std::string::npos);
                 break;
             }
-            case 2: {
+            case 2:
+            {
                 BOOST_REQUIRE(line.find("[warning]") != std::string::npos);
                 break;
             }
-            case 3: {
+            case 3:
+            {
                 BOOST_REQUIRE(line.find("[error]") != std::string::npos);
                 break;
             }
-            case 4: {
+            case 4:
+            {
                 BOOST_REQUIRE(line.find("[fatal]") != std::string::npos);
                 break;
             }
@@ -328,7 +345,7 @@ namespace tests {
     {
         print_current_test_name();
 
-        init_cli_log();
+        set_autoflush(true).init_cli_log();
 
         create_log_file(current_test_name());
 
@@ -356,32 +373,38 @@ namespace tests {
         {
             switch (rows)
             {
-            case 0: {
+            case 0:
+            {
                 BOOST_REQUIRE(line.find("[trace]") != std::string::npos);
                 BOOST_REQUIRE(line.find(TEST_CONTEXT_MARKER) == std::string::npos);
                 break;
             }
-            case 1: {
+            case 1:
+            {
                 BOOST_REQUIRE(line.find("[debug]") != std::string::npos);
                 BOOST_REQUIRE(line.find(TEST_CONTEXT_MARKER) == std::string::npos);
                 break;
             }
-            case 6: {
+            case 6:
+            {
                 BOOST_REQUIRE(line.find("[trace]") != std::string::npos);
                 BOOST_REQUIRE(line.find(TEST_CONTEXT_MARKER) != std::string::npos);
                 break;
             }
-            case 7: {
+            case 7:
+            {
                 BOOST_REQUIRE(line.find("[debug]") != std::string::npos);
                 BOOST_REQUIRE(line.find(TEST_CONTEXT_MARKER) != std::string::npos);
                 break;
             }
-            case 12: {
+            case 12:
+            {
                 BOOST_REQUIRE(line.find("[warning]") != std::string::npos);
                 BOOST_REQUIRE(line.find(TEST_CONTEXT_MARKER) == std::string::npos);
                 break;
             }
-            case 13: {
+            case 13:
+            {
                 BOOST_REQUIRE(line.find("[error]") != std::string::npos);
                 BOOST_REQUIRE(line.find(TEST_CONTEXT_MARKER) == std::string::npos);
                 break;
@@ -391,7 +414,7 @@ namespace tests {
         }
 
         BOOST_REQUIRE_EQUAL(rows, 6 + 6 + 2);
-    }
+    } // namespace tests
 
     BOOST_AUTO_TEST_SUITE_END()
 

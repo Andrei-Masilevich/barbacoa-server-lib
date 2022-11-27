@@ -82,8 +82,10 @@ namespace server_lib {
 
 // Alternative syntaxic
 //
-#define LOG_LOG_ALTERNATIVE(LEVEL, FILE, LINE, FUNC) \
-    LOGGER_REFERENCE.create_stream_message(LEVEL, sizeof(FILE), FILE, LINE, FUNC).stream()
+#define LOG_LOG_ALTERNATIVE(LEVEL, FILE, LINE, FUNC)                                                                  \
+    for (logger::log_stream_message _(LOGGER_REFERENCE.create_stream_message(LEVEL, sizeof(FILE), FILE, LINE, FUNC)); \
+         LOGGER_REFERENCE.is_not_filtered(TRACE) && !_.streamed();)                                                   \
+    _.open_stream()
 
 #define LOG(LEVEL) LOG_LOG_ALTERNATIVE(LEVEL, __FILE__, __LINE__, SRV_FUNCTION_NAME_)
 #define LOGC(LEVEL) LOG(LEVEL) << SRV_LOG_CONTEXT_

@@ -139,19 +139,27 @@ public:
         friend class logger;
 
     public:
-        std::stringstream& stream()
+        std::stringstream& open_stream()
         {
+            _streamed = true;
             return _msg.stream;
+        }
+
+        bool streamed() const
+        {
+            return _streamed;
         }
 
         ~log_stream_message();
 
+        log_stream_message(log_stream_message&&);
+
     private:
         log_stream_message(logger&, log_message&&);
-        log_stream_message(log_stream_message&&);
 
         logger& _logger;
         log_message _msg;
+        bool _streamed = false;
     };
 
     using log_handler_type = std::function<void(const log_message&, int details_filter)>;
@@ -245,14 +253,14 @@ private:
 
 // Helpers for alternative syntaxic
 //
-static constexpr logger::level const& TRACE = logger::level::trace;
-static constexpr logger::level const& DEBUG = logger::level::debug;
-static constexpr logger::level const& INFO = logger::level::info;
-static constexpr logger::level const& WARNING = logger::level::warning;
-static constexpr logger::level const& ERROR = logger::level::error;
-static constexpr logger::level const& FATAL = logger::level::fatal;
+static constexpr const logger::level TRACE = logger::level::trace;
+static constexpr const logger::level DEBUG = logger::level::debug;
+static constexpr const logger::level INFO = logger::level::info;
+static constexpr const logger::level WARNING = logger::level::warning;
+static constexpr const logger::level ERROR = logger::level::error;
+static constexpr const logger::level FATAL = logger::level::fatal;
 
-static constexpr logger::level const& WARN = WARNING;
-static constexpr logger::level const& ERR = ERROR;
+static constexpr const logger::level WARN = WARNING;
+static constexpr const logger::level ERR = ERROR;
 
 } // namespace server_lib
