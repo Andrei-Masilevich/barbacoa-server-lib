@@ -314,9 +314,12 @@ spawn_polling::~spawn_polling()
 
 spawn_polling& spawn_polling::append(const spawn_ptr& spawn)
 {
-    std::lock_guard<std::mutex> lock(_pool_protector);
-    _pool.push_back(spawn);
-    std::atomic_fetch_add<size_t>(&_pool_size, 1);
+    if (!_break)
+    {
+        std::lock_guard<std::mutex> lock(_pool_protector);
+        _pool.push_back(spawn);
+        std::atomic_fetch_add<size_t>(&_pool_size, 1);
+    }
     return *this;
 }
 
@@ -329,11 +332,14 @@ void spawn_polling::wait()
         lock.unlock();
         for (const auto& spawn : pool)
         {
-            if (_break || !spawn->poll())
+            bool break_ = _break.load();
+            if (break_ || !spawn->poll())
             {
-                lock.lock();
+                if (!break_)
+                    lock.lock();
                 _pool.push_back(spawn);
-                lock.unlock();
+                if (!break_)
+                    lock.unlock();
             }
             else
             {
@@ -342,7 +348,6 @@ void spawn_polling::wait()
         }
     }
 
-    std::lock_guard<std::mutex> lock(_pool_protector);
     for (const auto& spawn : _pool)
     {
         spawn->kill();
