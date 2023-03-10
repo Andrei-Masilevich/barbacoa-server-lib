@@ -5,6 +5,7 @@
 #include <memory>
 #include <functional>
 
+#include <memory.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -50,18 +51,58 @@ private:
     std::istream& _stderr;
 
 public:
-    int child_pid = -1;
+    pid_t child_pid = -1;
+
+    using args_type = spawn::args_type;
+    using envs_type = spawn::envs_type;
 
     spawn_iml(std::ostream& stdin_r,
               std::istream& stdout_r,
               std::istream& stderr_r,
-              const char* const argv[],
-              const char* const envp[],
+              const args_type& args,
+              const envs_type& envs,
               bool with_path)
         : _stdin(stdin_r)
         , _stdout(stdout_r)
         , _stderr(stderr_r)
     {
+        SRV_ASSERT(!args.empty());
+        char** pargv = nullptr;
+        {
+            pargv = decltype(pargv)(alloca((args.size() + 1) * sizeof(char*)));
+            decltype(pargv) parg = pargv;
+            for (const auto& arg : args)
+            {
+                *parg = (char*)(alloca((arg.size() + 1) * sizeof(char)));
+                memcpy(*parg, arg.c_str(), arg.size());
+                (*parg)[arg.size()] = 0;
+                parg++;
+            }
+            *parg = NULL;
+        }
+        char** penvv = nullptr;
+        if (!envs.empty())
+        {
+            penvv = decltype(penvv)(alloca((envs.size() + 1) * sizeof(char*)));
+            decltype(penvv) penv = penvv;
+            for (const auto& env : envs)
+            {
+                size_t sz = env.first.size();
+                sz += env.second.size();
+                sz += 1;
+                *penv = (char*)(alloca((sz + 1) * sizeof(char)));
+                char* pstr = *penv;
+                memcpy(pstr, env.first.c_str(), env.first.size());
+                pstr += env.first.size();
+                pstr[0] = '=';
+                pstr++;
+                memcpy(pstr, env.second.c_str(), env.second.size());
+                (*penv)[sz] = 0;
+                penv++;
+            }
+            *penv = NULL;
+        }
+
         child_pid = fork();
         SRV_ASSERT(child_pid != -1, "Failed to start child process");
         if (child_pid == 0)
@@ -75,17 +116,17 @@ public:
             int result = -1;
             if (with_path)
             {
-                if (envp != 0)
-                    result = execvpe(argv[0], const_cast<char* const*>(argv), const_cast<char* const*>(envp));
+                if (penvv)
+                    result = execvpe(pargv[0], const_cast<char* const*>(pargv), const_cast<char* const*>(penvv));
                 else
-                    result = execvp(argv[0], const_cast<char* const*>(argv));
+                    result = execvp(pargv[0], const_cast<char* const*>(pargv));
             }
             else
             {
-                if (envp != 0)
-                    result = execve(argv[0], const_cast<char* const*>(argv), const_cast<char* const*>(envp));
+                if (penvv)
+                    result = execve(pargv[0], const_cast<char* const*>(pargv), const_cast<char* const*>(penvv));
                 else
-                    result = execv(argv[0], const_cast<char* const*>(argv));
+                    result = execv(pargv[0], const_cast<char* const*>(pargv));
             }
             SRV_ASSERT(result != -1, "Failed to execute child process");
         }
@@ -103,7 +144,10 @@ public:
         }
     }
 
-    void send_eof() { _write_buf->close(); }
+    void send_eof()
+    {
+        _write_buf->close();
+    }
 
     int wait()
     {
@@ -123,84 +167,152 @@ public:
     }
 };
 
-spawn::spawn(const char* const argv[])
+spawn::spawn(const args_type& args)
     : stdin(NULL)
     , stdout(NULL)
     , stderr(NULL)
 {
-    const char* envp[] = { NULL };
-    _impl = std::make_unique<spawn_iml>(stdin, stdout, stderr, argv, envp, false);
+    _args = args;
+    _impl = std::make_unique<spawn_iml>(stdin, stdout, stderr, _args, envs_type {}, false);
 }
 
-spawn::spawn(const char* const argv[], const char* const envp[])
+spawn::spawn(const args_type& args, const envs_type& envs)
     : stdin(NULL)
     , stdout(NULL)
     , stderr(NULL)
 {
-    _impl = std::make_unique<spawn_iml>(stdin, stdout, stderr, argv, envp, false);
+    _args = args;
+    _envs = envs;
+    _impl = std::make_unique<spawn_iml>(stdin, stdout, stderr, _args, _envs, false);
 }
 
-spawn::spawn(const char* const argv[], const char* const envp[], bool with_path)
+spawn::spawn(const args_type& args, const envs_type& envs, bool with_path)
     : stdin(NULL)
     , stdout(NULL)
     , stderr(NULL)
 {
-    _impl = std::make_unique<spawn_iml>(stdin, stdout, stderr, argv, envp, with_path);
+    _args = args;
+    _envs = envs;
+    _impl = std::make_unique<spawn_iml>(stdin, stdout, stderr, _args, _envs, with_path);
 }
 
-spawn::spawn(const char* const argv[], bool with_path)
+#define SET_ARGS(args)
+
+
+spawn::spawn(const args_type& args, bool with_path)
     : stdin(NULL)
     , stdout(NULL)
     , stderr(NULL)
 {
-    const char* envp[] = { NULL };
-    _impl = std::make_unique<spawn_iml>(stdin, stdout, stderr, argv, envp, with_path);
+    _args = args;
+    _impl = std::make_unique<spawn_iml>(stdin, stdout, stderr, _args, envs_type {}, with_path);
 }
 
 spawn::~spawn()
 {
-    int status = -1;
-    if (!async_wait(status))
-        wait();
+    if (-1 == _returnstatus)
+    {
+        if (!poll())
+            wait();
+    }
 }
 
-int spawn::child_pid() const
+spawn& spawn::wait()
 {
-    return _impl->child_pid;
+    if (-1 == _returnstatus)
+    {
+        _returnstatus = _impl->wait();
+    }
+    return *this;
 }
 
-void spawn::send_eof()
-{
-    _impl->send_eof();
-}
-
-int spawn::wait()
-{
-    return _impl->wait();
-}
-
-bool spawn::async_wait(int& status)
+bool spawn::poll()
 {
     bool finished = true;
-    _impl->async_wait(finished, status);
+    if (-1 == _returnstatus)
+    {
+        int status = -1;
+        _impl->async_wait(finished, status);
+        if (finished)
+        {
+            _returnstatus = status;
+        }
+    }
     return finished;
 }
 
-spawn_waiting_pool::spawn_waiting_pool()
+spawn& spawn::communicate(const std::string& input)
+{
+    if (!input.empty())
+    {
+        stdin << input;
+    }
+    _impl->send_eof();
+    wait();
+    return *this;
+}
+
+spawn& spawn::send_signal(int sig)
+{
+    ::kill(_impl->child_pid, sig);
+    wait();
+    return *this;
+}
+
+spawn& spawn::terminate()
+{
+    return send_signal(SIGTERM);
+}
+
+spawn& spawn::kill()
+{
+    return send_signal(SIGKILL);
+}
+
+int spawn::pid() const
+{
+    return static_cast<int>(_impl->child_pid);
+}
+
+int spawn::returncode() const
+{
+    if (_returnstatus < 0)
+        return _returnstatus;
+
+    if (WIFEXITED(_returnstatus))
+        return WEXITSTATUS(_returnstatus);
+
+    return sigcode();
+}
+
+int spawn::sigcode() const
+{
+    if (_returnstatus < 0)
+        return _returnstatus;
+
+    if (WIFSIGNALED(_returnstatus))
+        return WTERMSIG(_returnstatus);
+
+    return 0;
+}
+
+spawn_polling::spawn_polling(const spawn_ptr& spawn)
 {
     _break.store(false);
     _pool_size.store(0);
-    _thread = std::make_unique<std::thread>(std::bind(&spawn_waiting_pool::wait, this));
+    if (spawn)
+        append(spawn);
+    _thread = std::make_unique<std::thread>(std::bind(&spawn_polling::wait, this));
 }
 
-spawn_waiting_pool::~spawn_waiting_pool()
+spawn_polling::~spawn_polling()
 {
     _break.store(true);
     _thread->join();
     _thread.reset();
 }
 
-spawn_waiting_pool& spawn_waiting_pool::addend(const spawn_ptr& spawn)
+spawn_polling& spawn_polling::append(const spawn_ptr& spawn)
 {
     std::lock_guard<std::mutex> lock(_pool_protector);
     _pool.push_back(spawn);
@@ -208,7 +320,7 @@ spawn_waiting_pool& spawn_waiting_pool::addend(const spawn_ptr& spawn)
     return *this;
 }
 
-void spawn_waiting_pool::wait()
+void spawn_polling::wait()
 {
     while (!_break)
     {
@@ -217,8 +329,7 @@ void spawn_waiting_pool::wait()
         lock.unlock();
         for (const auto& spawn : pool)
         {
-            int status = -1;
-            if (_break || !spawn->async_wait(status))
+            if (_break || !spawn->poll())
             {
                 lock.lock();
                 _pool.push_back(spawn);
@@ -234,7 +345,7 @@ void spawn_waiting_pool::wait()
     std::lock_guard<std::mutex> lock(_pool_protector);
     for (const auto& spawn : _pool)
     {
-        kill(spawn->child_pid(), SIGKILL);
+        spawn->kill();
     }
     _pool.clear();
 }
